@@ -628,7 +628,7 @@ body {
 const SHEET_ID   = '1FP0A53UPuawzb9GQM1D4OABhy0dXSvF3nignIMyEXtk';
 const SHEET_URL  = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/edit`;
 // วาง Google Apps Script Web App URL ของคุณด้านล่าง (ดูวิธีตั้งค่าใน README.md)
-const SCRIPT_URL = localStorage.getItem('gscript_url') || '';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbynbY6lNhAtMyU5IFXQfg2tpCCLl20GHsmaCa3VMzMLfechWEVRRXR7srPv-jowwKjf/exec';
 
 /* =============================================
    ROW MANAGEMENT
@@ -741,9 +741,9 @@ async function saveToSheet() {
   if (saved) {
     document.getElementById('successOverlay').classList.add('open');
   } else {
-    // Fallback: open sheet + show instructions
+    // Fallback: open sheet directly
     window.open(SHEET_URL, '_blank');
-    toast('เปิด Google Sheet แล้ว — กรุณาตั้งค่า Apps Script URL ก่อนใช้งาน', 'err');
+    toast('เกิดข้อผิดพลาด กรุณาตรวจสอบการเชื่อมต่ออินเทอร์เน็ต', 'err');
   }
 }
 
