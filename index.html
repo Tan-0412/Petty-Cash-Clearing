@@ -163,7 +163,7 @@ body {
   transition: background 0.12s;
 }
 .tbl tbody td input:focus { background: var(--accent-light); }
-.tbl tbody td input.iamt { text-align: right; } #loanAmount { text-align: right; }
+.tbl tbody td input[type=number] { text-align: right; }
 .tbl .cell-no { text-align: center; color: var(--text-muted); font-size: 12px; width: 36px; }
 .tbl .cell-date { width: 120px; }
 .tbl .cell-hasreceipt { width: 70px; text-align: center; }
@@ -261,7 +261,7 @@ body {
 .sig-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
 .sig-item { text-align: center; }
 .sig-line { height: 40px; border-bottom: 1px solid var(--border); margin-bottom: 6px; }
-.sig-item span { font-size: 14px; font-weight: 600; color: var(--text); }
+.sig-item span { font-size: 12px; color: var(--text-muted); }
 
 /* ===================== BOTTOM BAR ===================== */
 .bottom-bar {
@@ -612,7 +612,7 @@ body {
         </div>
         <div class="field">
           <label>ยอดเงินยืมทดรอง (บาท) <span class="req">*</span></label>
-          <input type="text" id="loanAmount" placeholder="0.00" inputmode="decimal" oninput="onLoanInput(this)" onblur="fmtInput(this)" onfocus="unfmtInput(this)" />
+          <input type="number" id="loanAmount" placeholder="0.00" step="0.01" min="0" oninput="calcAll()" />
         </div>
       </div>
     </div>
@@ -809,7 +809,7 @@ function addRow(dateVal='', descVal='', receiptVal='', amtVal='', hasReceiptVal=
       <input type="checkbox" class="ihasreceipt receipt-check" ${checkedAttr} onchange="toggleReceipt(${id})" title="เอกสารการรับเงิน" />
     </td>
     <td class="cell-receipt"><input type="text" class="ireceipt" placeholder="เลขที่" value="${escHtml(receiptVal)}" style="text-align:center;" ${disabledAttr} /></td>
-    <td class="cell-amount"><input type="text" class="iamt" placeholder="0.00" inputmode="decimal" value="${amtVal ? fmtN(parseFloat(amtVal)||0) : ''}" oninput="onAmtInput(this)" onblur="fmtInput(this)" onfocus="unfmtInput(this)" /></td>
+    <td class="cell-amount"><input type="number" class="iamt" placeholder="0.00" step="0.01" min="0" value="${amtVal}" oninput="calcAll()" /></td>
     <td class="cell-del"><button class="del-btn" onclick="delRow(${id})" title="ลบ">✕</button></td>
   `;
   tbody.appendChild(tr);
@@ -846,32 +846,9 @@ function reNumber() {
 /* =============================================
    CALCULATIONS
    ============================================= */
-/* number input helpers */
-function unformatNum(s) {
-  return parseFloat(String(s).replace(/,/g,'')) || 0;
-}
-function fmtInput(el) {
-  const v = unformatNum(el.value);
-  el.value = v ? fmtN(v) : '';
-  calcAll();
-}
-function unfmtInput(el) {
-  const v = unformatNum(el.value);
-  el.value = v ? String(v) : '';
-}
-function onLoanInput(el) {
-  // allow typing: digits, dot, comma
-  el.value = el.value.replace(/[^0-9.,]/g,'');
-  calcAll();
-}
-function onAmtInput(el) {
-  el.value = el.value.replace(/[^0-9.,]/g,'');
-  calcAll();
-}
-
 function calcAll() {
-  const loan    = unformatNum(document.getElementById('loanAmount').value);
-  const amounts = [...document.querySelectorAll('.iamt')].map(i => unformatNum(i.value));
+  const loan    = parseFloat(document.getElementById('loanAmount').value) || 0;
+  const amounts = [...document.querySelectorAll('.iamt')].map(i => parseFloat(i.value) || 0);
   const total   = amounts.reduce((a, b) => a + b, 0);
   const diff    = loan - total;
 
@@ -900,7 +877,7 @@ async function saveToSheet() {
   const submitDate= document.getElementById('submitDate').value;
   const loanDate  = document.getElementById('loanDate').value;
   const purpose   = document.getElementById('purpose').value.trim();
-  const loanAmount= unformatNum(document.getElementById('loanAmount').value);
+  const loanAmount= parseFloat(document.getElementById('loanAmount').value) || 0;
 
   if (!company || !empName || !submitDate || !purpose || !loanAmount) {
     toast('กรุณากรอกข้อมูลให้ครบถ้วน', 'err'); return;
@@ -914,7 +891,7 @@ async function saveToSheet() {
     desc: tr.querySelector('.idesc').value,
     hasReceipt: tr.querySelector('.ihasreceipt').checked,
     receipt: tr.querySelector('.ireceipt').value,
-    amount: unformatNum(tr.querySelector('.iamt').value)
+    amount: parseFloat(tr.querySelector('.iamt').value) || 0
   }));
 
   const totalExpense = items.reduce((a, b) => a + b.amount, 0);
@@ -941,9 +918,8 @@ async function saveToSheet() {
   let saved = false;
   if (SCRIPT_URL) {
     try {
-      const fd = new FormData();
-      fd.append('data', JSON.stringify(payload));
-      await fetch(SCRIPT_URL, { method: 'POST', body: fd, redirect: 'follow' });
+      const params = new URLSearchParams({ action: 'write', data: JSON.stringify(payload) });
+      await fetch(SCRIPT_URL + '?' + params.toString(), { method: 'GET', mode: 'no-cors' });
       saved = true;
     } catch(e) { console.warn('Script fetch error:', e); }
   }
@@ -982,7 +958,7 @@ function updatePrintHeader() {
   const empName  = document.getElementById('empName').value   || '—';
   const submitDate = document.getElementById('submitDate').value || '—';
   const purpose  = document.getElementById('purpose').value   || '—';
-  const loan     = unformatNum(document.getElementById('loanAmount').value);
+  const loan     = parseFloat(document.getElementById('loanAmount').value) || 0;
 
   const el = document.getElementById('printCompanyName');
   if (el) el.textContent = company;
@@ -1362,7 +1338,7 @@ function printHistoryGroup(gi, key) {
         ${['ผู้เบิกทดรอง','บัญชี (ผู้ตรวจเอกสาร)','ผู้บังคับบัญชา','ผู้อนุมัติ'].map(s=>`
           <div>
             <div style="height:44px;border-bottom:1px solid #999;margin-bottom:6px;"></div>
-            <span style="font-size:15px;font-weight:600;color:#1a1917;">${s}</span>
+            <span style="font-size:12px;color:#666;">${s}</span>
           </div>`).join('')}
       </div>
 
@@ -1396,7 +1372,7 @@ function editGroup(key) {
   document.getElementById('company').value    = m.company    || '';
   document.getElementById('empName').value    = m.empName    || '';
   document.getElementById('purpose').value    = m.purpose    || '';
-  document.getElementById('loanAmount').value = m.loanAmount ? fmtN(parseFloat(m.loanAmount)||0) : '';
+  document.getElementById('loanAmount').value = m.loanAmount || '';
 
   // แปลงวันที่กลับเป็น YYYY-MM-DD สำหรับ input[type=date]
   document.getElementById('submitDate').value = toInputDate(m.submitDate);
@@ -1476,14 +1452,13 @@ async function doDeleteGroup() {
   btn.textContent = 'กำลังลบ...';
 
   try {
-    const fd = new FormData();
-    fd.append('action', 'delete');
-    fd.append('data', JSON.stringify({
+    const delPayload = {
       timestamp: g.meta.timestamp,
       empName:   g.meta.empName,
       submitDate: g.meta.submitDate
-    }));
-    await fetch(SCRIPT_URL, { method: 'POST', body: fd, redirect: 'follow' });
+    };
+    const params = new URLSearchParams({ action: 'delete', data: JSON.stringify(delPayload) });
+    await fetch(SCRIPT_URL + '?' + params.toString(), { method: 'GET', mode: 'no-cors' });
     closeDeleteModal();
     toast('ลบรายการเรียบร้อยแล้ว', 'ok');
     // รีโหลดประวัติ
