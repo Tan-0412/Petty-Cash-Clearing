@@ -1,0 +1,33 @@
+{
+  "name": "ใบเคลียร์เงินยืมทดรอง",
+  "short_name": "เคลียร์เงินยืม",
+  "description": "ระบบใบเคลียร์เงินยืมทดรอง บันทึกลง Google Sheet",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f5f3ee",
+  "theme_color": "#3d5a3e",
+  "lang": "th",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["finance", "productivity"],
+  "shortcuts": [
+    {
+      "name": "สร้างใบเคลียร์ใหม่",
+      "url": "./index.html",
+      "description": "เปิดฟอร์มใบเคลียร์เงินยืมทดรอง"
+    }
+  ]
+}

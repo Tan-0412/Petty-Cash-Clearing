@@ -1,0 +1,845 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="theme-color" content="#3d5a3e">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="เคลียร์เงินยืม">
+<meta name="description" content="ระบบใบเคลียร์เงินยืมทดรอง - บันทึกลง Google Sheet">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" type="image/png" href="icon-192.png">
+<title>ใบเคลียร์เงินยืมทดรอง</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ===================== VARIABLES ===================== */
+:root {
+  --bg: #f5f3ee;
+  --surface: #ffffff;
+  --border: #c8bfa8;
+  --border-light: #e5dfd3;
+  --text: #2a2318;
+  --text-muted: #7a6e5f;
+  --accent: #3d5a3e;
+  --accent-light: #e8f0e8;
+  --accent-hover: #2e4430;
+  --danger: #8b2a2a;
+  --gold: #b8860b;
+  --shadow: 0 2px 12px rgba(42,35,24,0.09);
+  --shadow-lg: 0 8px 32px rgba(42,35,24,0.15);
+  --r: 6px;
+}
+
+/* ===================== RESET ===================== */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Sarabun', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ===================== TOPBAR ===================== */
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: var(--accent);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  height: 56px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+.topbar-title { font-size: 17px; font-weight: 700; letter-spacing: 0.03em; }
+.topbar-sub { font-size: 11px; opacity: 0.75; }
+.topbar-actions { display: flex; gap: 6px; }
+.icon-btn {
+  background: rgba(255,255,255,0.15);
+  border: none;
+  color: white;
+  width: 38px; height: 38px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  font-size: 18px;
+  transition: background 0.15s;
+}
+.icon-btn:hover { background: rgba(255,255,255,0.28); }
+
+/* ===================== LAYOUT ===================== */
+.page { max-width: 900px; margin: 0 auto; padding: 20px 16px 120px; }
+
+/* ===================== CARDS ===================== */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border-light);
+  border-radius: var(--r);
+  box-shadow: var(--shadow);
+  margin-bottom: 16px;
+  overflow: hidden;
+}
+.card-head {
+  padding: 14px 20px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent);
+  border-bottom: 1px solid var(--border-light);
+  background: #f9f8f5;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.card-body { padding: 18px 20px; }
+
+/* ===================== GRID ===================== */
+.g2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.g3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+.span2 { grid-column: span 2; }
+
+/* ===================== FIELDS ===================== */
+.field { display: flex; flex-direction: column; gap: 4px; }
+.field label { font-size: 11px; font-weight: 700; color: var(--text-muted); letter-spacing: 0.05em; text-transform: uppercase; }
+.field label .req { color: var(--danger); margin-left: 2px; }
+.field input, .field select, .field textarea {
+  font-family: 'Sarabun', sans-serif;
+  font-size: 15px;
+  padding: 9px 12px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--r);
+  background: var(--bg);
+  color: var(--text);
+  width: 100%;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
+}
+.field input:focus, .field select:focus, .field textarea:focus {
+  border-color: var(--accent);
+  background: white;
+  box-shadow: 0 0 0 3px rgba(61,90,62,0.13);
+}
+.field textarea { resize: vertical; min-height: 64px; line-height: 1.5; }
+
+/* ===================== ITEMS TABLE ===================== */
+.tbl-wrap { overflow-x: auto; }
+.tbl {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+.tbl thead th {
+  background: #f0ece4;
+  padding: 10px 8px;
+  text-align: center;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  border-bottom: 2px solid var(--border);
+  white-space: nowrap;
+}
+.tbl thead th:nth-child(3) { text-align: left; }
+.tbl tbody tr { border-bottom: 1px solid var(--border-light); transition: background 0.1s; }
+.tbl tbody tr:hover { background: #fafaf7; }
+.tbl tbody td { padding: 5px 6px; vertical-align: middle; }
+.tbl tbody td input {
+  font-family: 'Sarabun', sans-serif;
+  font-size: 14px;
+  border: none;
+  background: transparent;
+  width: 100%;
+  outline: none;
+  color: var(--text);
+  padding: 4px 5px;
+  border-radius: 4px;
+  transition: background 0.12s;
+}
+.tbl tbody td input:focus { background: var(--accent-light); }
+.tbl tbody td input[type=number] { text-align: right; }
+.tbl .cell-no { text-align: center; color: var(--text-muted); font-size: 12px; width: 36px; }
+.tbl .cell-date { width: 110px; }
+.tbl .cell-receipt { width: 100px; text-align: center; }
+.tbl .cell-amount { width: 120px; }
+.tbl .cell-del { width: 36px; text-align: center; }
+.del-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #ccc;
+  font-size: 16px;
+  padding: 4px;
+  border-radius: 4px;
+  transition: color 0.15s, background 0.15s;
+}
+.del-btn:hover { color: var(--danger); background: #fdf0f0; }
+.add-row-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 10px 20px 16px;
+  font-family: 'Sarabun', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--accent);
+  background: none;
+  border: 1.5px dashed var(--accent);
+  border-radius: var(--r);
+  padding: 7px 16px;
+  cursor: pointer;
+  width: calc(100% - 40px);
+  justify-content: center;
+  transition: background 0.15s;
+}
+.add-row-btn:hover { background: var(--accent-light); }
+
+/* ===================== SUMMARY ===================== */
+.summary-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+.sum-box {
+  background: #f9f8f5;
+  border: 1px solid var(--border-light);
+  border-radius: var(--r);
+  padding: 14px 16px;
+}
+.sum-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--border-light);
+  font-size: 14px;
+}
+.sum-row:last-child { border-bottom: none; }
+.sum-row label { color: var(--text-muted); font-size: 13px; }
+.sum-row .val { font-weight: 600; font-size: 15px; }
+.sum-row.highlight {
+  background: var(--accent);
+  margin: 0 -16px;
+  padding: 10px 16px;
+  border-radius: 0 0 var(--r) var(--r);
+  border: none;
+}
+.sum-row.highlight label, .sum-row.highlight .val { color: white; }
+.sum-row.highlight .val { font-size: 18px; }
+.badge-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+.badge {
+  text-align: center;
+  padding: 12px 8px;
+  border-radius: var(--r);
+  border: 1px solid var(--border-light);
+}
+.badge .badge-label { font-size: 11px; color: var(--text-muted); margin-bottom: 4px; }
+.badge .badge-val { font-size: 16px; font-weight: 700; }
+.badge.green { background: #edf5ed; border-color: #b3d4b3; }
+.badge.green .badge-val { color: var(--accent); }
+.badge.red { background: #fdf0f0; border-color: #e0b3b3; }
+.badge.red .badge-val { color: var(--danger); }
+.badge.gray { background: #f5f5f5; border-color: var(--border); }
+
+/* ===================== SIGNATURES ===================== */
+.sig-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+.sig-item { text-align: center; }
+.sig-line { height: 40px; border-bottom: 1px solid var(--border); margin-bottom: 6px; }
+.sig-item span { font-size: 12px; color: var(--text-muted); }
+
+/* ===================== BOTTOM BAR ===================== */
+.bottom-bar {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  background: white;
+  border-top: 1px solid var(--border-light);
+  padding: 12px 16px;
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  box-shadow: 0 -4px 16px rgba(0,0,0,0.08);
+  z-index: 40;
+}
+.btn {
+  font-family: 'Sarabun', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  padding: 10px 20px;
+  border-radius: var(--r);
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  transition: all 0.15s;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+.btn-primary { background: var(--accent); color: white; }
+.btn-primary:hover { background: var(--accent-hover); transform: translateY(-1px); box-shadow: var(--shadow); }
+.btn-primary:active { transform: translateY(0); }
+.btn-primary:disabled { opacity: 0.55; cursor: not-allowed; transform: none; box-shadow: none; }
+.btn-outline { background: white; color: var(--text); border: 1.5px solid var(--border); }
+.btn-outline:hover { border-color: var(--text-muted); background: var(--bg); }
+.btn-danger-outline { background: white; color: var(--danger); border: 1.5px solid #e0b3b3; }
+.btn-danger-outline:hover { background: #fdf0f0; }
+.btn-pdf { background: #c0392b; color: white; }
+.btn-pdf:hover { background: #a93226; transform: translateY(-1px); }
+
+/* ===================== TOAST ===================== */
+.toast {
+  position: fixed;
+  bottom: 80px; right: 16px;
+  padding: 13px 18px;
+  border-radius: var(--r);
+  color: white;
+  font-size: 14px;
+  font-weight: 600;
+  box-shadow: var(--shadow-lg);
+  transform: translateY(20px);
+  opacity: 0;
+  transition: all 0.28s cubic-bezier(0.34,1.56,0.64,1);
+  z-index: 999;
+  max-width: 300px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.toast.show { transform: translateY(0); opacity: 1; }
+.toast.ok { background: var(--accent); }
+.toast.err { background: var(--danger); }
+
+/* ===================== MODAL ===================== */
+.overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.45);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 200;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.2s;
+  padding: 16px;
+}
+.overlay.open { opacity: 1; pointer-events: all; }
+.modal {
+  background: white;
+  border-radius: 12px;
+  padding: 28px 24px;
+  width: 100%;
+  max-width: 440px;
+  box-shadow: var(--shadow-lg);
+  transform: scale(0.94);
+  transition: transform 0.2s;
+  text-align: center;
+}
+.overlay.open .modal { transform: scale(1); }
+.modal-icon { font-size: 52px; margin-bottom: 12px; }
+.modal h3 { font-size: 20px; font-weight: 700; margin-bottom: 6px; }
+.modal p { font-size: 14px; color: var(--text-muted); margin-bottom: 20px; line-height: 1.6; }
+.modal-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--accent-light);
+  color: var(--accent);
+  font-weight: 700;
+  font-size: 14px;
+  padding: 10px 20px;
+  border-radius: var(--r);
+  text-decoration: none;
+  margin-bottom: 12px;
+  transition: background 0.15s;
+}
+.modal-link:hover { background: #d0e8d0; }
+
+/* ===================== INSTALL BANNER ===================== */
+.install-banner {
+  display: none;
+  background: var(--accent);
+  color: white;
+  padding: 12px 16px;
+  font-size: 13px;
+  align-items: center;
+  gap: 12px;
+  justify-content: space-between;
+}
+.install-banner.show { display: flex; }
+.install-btn-sm {
+  background: white;
+  color: var(--accent);
+  border: none;
+  border-radius: 20px;
+  padding: 6px 14px;
+  font-family: 'Sarabun', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.dismiss-btn {
+  background: none;
+  border: none;
+  color: rgba(255,255,255,0.7);
+  cursor: pointer;
+  font-size: 18px;
+  padding: 0 4px;
+}
+
+/* ===================== SPINNER ===================== */
+.spin {
+  width: 16px; height: 16px;
+  border: 2px solid rgba(255,255,255,0.35);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+  flex-shrink: 0;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ===================== PRINT ===================== */
+@media print {
+  .topbar, .bottom-bar, .install-banner, .add-row-btn,
+  .del-btn, .toast, .overlay, #installBanner { display: none !important; }
+  body { background: white; }
+  .page { padding: 0; max-width: 100%; }
+  .card { box-shadow: none; border: 1px solid #ccc; margin-bottom: 10px; }
+  .card-body { padding: 12px 16px; }
+  .print-header {
+    display: block !important;
+    text-align: center;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 2px solid #333;
+  }
+  .tbl tbody td input { border: none; background: transparent; }
+  .sum-row.highlight { background: #333 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .bottom-bar { display: none !important; }
+  @page { margin: 15mm; size: A4; }
+}
+.print-header { display: none; }
+
+/* ===================== RESPONSIVE ===================== */
+@media (max-width: 600px) {
+  .g2, .g3 { grid-template-columns: 1fr; }
+  .span2 { grid-column: span 1; }
+  .summary-grid { grid-template-columns: 1fr; }
+  .sig-grid { grid-template-columns: 1fr 1fr; }
+  .badge-grid { grid-template-columns: 1fr; }
+  .topbar-sub { display: none; }
+  .btn { font-size: 13px; padding: 9px 14px; }
+}
+@media (max-width: 400px) {
+  .bottom-bar { flex-wrap: wrap; }
+}
+</style>
+</head>
+<body>
+
+<!-- Install Banner -->
+<div class="install-banner" id="installBanner">
+  <span>📱 ติดตั้งแอปบนมือถือเพื่อใช้งานออฟไลน์</span>
+  <div style="display:flex;gap:8px;align-items:center;flex-shrink:0;">
+    <button class="install-btn-sm" id="installBtn">ติดตั้ง</button>
+    <button class="dismiss-btn" id="dismissInstall">✕</button>
+  </div>
+</div>
+
+<!-- Top Bar -->
+<div class="topbar">
+  <div>
+    <div class="topbar-title">ใบเคลียร์เงินยืมทดรอง</div>
+    <div class="topbar-sub">กรอกข้อมูลเพื่อบันทึกลง Google Sheet</div>
+  </div>
+  <div class="topbar-actions">
+    <button class="icon-btn" onclick="printForm()" title="พิมพ์">🖨️</button>
+    <button class="icon-btn" onclick="exportPDF()" title="ส่งออก PDF">📄</button>
+    <button class="icon-btn" onclick="openSheet()" title="เปิด Google Sheet">📊</button>
+  </div>
+</div>
+
+<div class="page">
+
+  <!-- Print Header (visible only when printing) -->
+  <div class="print-header" id="printHeader">
+    <h2 style="font-size:20px;font-weight:700;">ใบเคลียร์เงินยืมทดรอง</h2>
+    <div id="printCompanyDate" style="font-size:14px;margin-top:4px;"></div>
+  </div>
+
+  <!-- Section 1: ข้อมูลทั่วไป -->
+  <div class="card">
+    <div class="card-head">📋 ข้อมูลทั่วไป</div>
+    <div class="card-body">
+      <div class="g2" style="margin-bottom:14px;">
+        <div class="field span2">
+          <label>ชื่อบริษัท <span class="req">*</span></label>
+          <input type="text" id="company" placeholder="ชื่อบริษัท จำกัด" autocomplete="organization" />
+        </div>
+        <div class="field span2">
+          <label>ชื่อผู้เบิกทดรอง <span class="req">*</span></label>
+          <input type="text" id="empName" placeholder="ชื่อ-นามสกุล ผู้เบิก" autocomplete="name" />
+        </div>
+        <div class="field">
+          <label>วันที่ยื่นเรื่อง <span class="req">*</span></label>
+          <input type="date" id="submitDate" />
+        </div>
+        <div class="field">
+          <label>ได้รับเงินทดรองตั้งแต่วันที่</label>
+          <input type="date" id="loanDate" />
+        </div>
+        <div class="field span2">
+          <label>เพื่อดำเนินการในเรื่อง <span class="req">*</span></label>
+          <textarea id="purpose" placeholder="ระบุวัตถุประสงค์การใช้จ่ายเงินทดรอง..."></textarea>
+        </div>
+        <div class="field">
+          <label>ยอดเงินยืมทดรอง (บาท) <span class="req">*</span></label>
+          <input type="number" id="loanAmount" placeholder="0.00" step="0.01" min="0" oninput="calcAll()" />
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Section 2: รายการค่าใช้จ่าย -->
+  <div class="card">
+    <div class="card-head">🧾 รายการค่าใช้จ่าย</div>
+    <div class="tbl-wrap">
+      <table class="tbl">
+        <thead>
+          <tr>
+            <th class="cell-no">No.</th>
+            <th class="cell-date">ว.ด.ป.</th>
+            <th>รายการ</th>
+            <th class="cell-receipt">เลขที่ใบเสร็จ</th>
+            <th class="cell-amount">จำนวนเงิน (฿)</th>
+            <th class="cell-del"></th>
+          </tr>
+        </thead>
+        <tbody id="itemsBody"></tbody>
+      </table>
+    </div>
+    <button class="add-row-btn" onclick="addRow()">＋ เพิ่มรายการ</button>
+  </div>
+
+  <!-- Section 3: สรุปยอด -->
+  <div class="card">
+    <div class="card-head">💰 สรุปยอดค่าใช้จ่าย</div>
+    <div class="card-body">
+      <div class="summary-grid">
+        <div class="sum-box">
+          <div class="sum-row">
+            <label>ยอดเงินยืมทดรอง</label>
+            <span class="val" id="dispLoan">฿ 0.00</span>
+          </div>
+          <div class="sum-row">
+            <label>หัก รวมค่าใช้จ่ายจริง</label>
+            <span class="val" id="dispExpense">฿ 0.00</span>
+          </div>
+          <div class="sum-row highlight">
+            <label>รวมค่าใช้จ่ายทั้งหมด</label>
+            <span class="val" id="dispTotal">฿ 0.00</span>
+          </div>
+        </div>
+        <div>
+          <div class="badge-grid">
+            <div class="badge gray">
+              <div class="badge-label">จำนวนรายการ</div>
+              <div class="badge-val" id="dispCount">0</div>
+            </div>
+            <div class="badge green">
+              <div class="badge-label">คงเหลือ (คืน)</div>
+              <div class="badge-val" id="dispReturn">0.00</div>
+            </div>
+            <div class="badge red">
+              <div class="badge-label">ต้องจ่ายเพิ่ม</div>
+              <div class="badge-val" id="dispExtra">0.00</div>
+            </div>
+          </div>
+          <div style="margin-top:12px;font-size:12px;color:var(--text-muted);line-height:1.7;">
+            <div>📌 คงเหลือ (คืน) = เมื่อเบิกเกินค่าใช้จ่ายจริง</div>
+            <div>📌 ต้องจ่ายเพิ่ม = เมื่อใช้จ่ายเกินยอดที่เบิก</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Section 4: ลายเซ็น -->
+  <div class="card">
+    <div class="card-head">✍️ ลายเซ็นผู้เกี่ยวข้อง</div>
+    <div class="card-body">
+      <div class="sig-grid">
+        <div class="sig-item">
+          <div class="sig-line"></div>
+          <span>ผู้เบิกทดรอง</span>
+        </div>
+        <div class="sig-item">
+          <div class="sig-line"></div>
+          <span>บัญชี (ผู้ตรวจเอกสาร)</span>
+        </div>
+        <div class="sig-item">
+          <div class="sig-line"></div>
+          <span>ผู้บังคับบัญชา</span>
+        </div>
+        <div class="sig-item">
+          <div class="sig-line"></div>
+          <span>ผู้อนุมัติ</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /page -->
+
+<!-- Bottom Action Bar -->
+<div class="bottom-bar">
+  <button class="btn btn-danger-outline" onclick="clearForm()">🗑 ล้างข้อมูล</button>
+  <button class="btn btn-outline" onclick="printForm()">🖨 พิมพ์</button>
+  <button class="btn btn-pdf" onclick="exportPDF()">📄 PDF</button>
+  <button class="btn btn-primary" id="saveBtn" onclick="saveToSheet()">
+    <span>💾 บันทึกลง Sheet</span>
+  </button>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<!-- Success Modal -->
+<div class="overlay" id="successOverlay">
+  <div class="modal">
+    <div class="modal-icon">✅</div>
+    <h3>บันทึกสำเร็จ!</h3>
+    <p>ข้อมูลถูกส่งไปยัง Google Sheet เรียบร้อยแล้ว<br>คลิกเพื่อเปิดดูข้อมูล</p>
+    <a class="modal-link" href="https://docs.google.com/spreadsheets/d/1FP0A53UPuawzb9GQM1D4OABhy0dXSvF3nignIMyEXtk/edit" target="_blank" rel="noopener">
+      📊 เปิด Google Sheet
+    </a>
+    <br>
+    <button class="btn btn-outline" style="margin:0 auto;" onclick="closeModal()">ปิด</button>
+  </div>
+</div>
+
+<script>
+/* =============================================
+   CONFIG — แก้ไข URL ของ Google Apps Script ที่นี่
+   ============================================= */
+const SHEET_ID   = '1FP0A53UPuawzb9GQM1D4OABhy0dXSvF3nignIMyEXtk';
+const SHEET_URL  = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/edit`;
+// วาง Google Apps Script Web App URL ของคุณด้านล่าง (ดูวิธีตั้งค่าใน README.md)
+const SCRIPT_URL = localStorage.getItem('gscript_url') || '';
+
+/* =============================================
+   ROW MANAGEMENT
+   ============================================= */
+let rowId = 0;
+
+function addRow(dateVal='', descVal='', receiptVal='', amtVal='') {
+  rowId++;
+  const id = rowId;
+  const tbody = document.getElementById('itemsBody');
+  const tr = document.createElement('tr');
+  tr.id = `r${id}`;
+  tr.innerHTML = `
+    <td class="cell-no">${tbody.rows.length + 1}</td>
+    <td class="cell-date"><input type="date" class="idate" value="${dateVal}" oninput="calcAll()" /></td>
+    <td><input type="text" class="idesc" placeholder="รายการค่าใช้จ่าย..." value="${escHtml(descVal)}" /></td>
+    <td class="cell-receipt"><input type="text" class="ireceipt" placeholder="เลขที่" value="${escHtml(receiptVal)}" style="text-align:center;" /></td>
+    <td class="cell-amount"><input type="number" class="iamt" placeholder="0.00" step="0.01" min="0" value="${amtVal}" oninput="calcAll()" /></td>
+    <td class="cell-del"><button class="del-btn" onclick="delRow(${id})" title="ลบ">✕</button></td>
+  `;
+  tbody.appendChild(tr);
+  reNumber();
+  calcAll();
+}
+
+function delRow(id) {
+  const tr = document.getElementById(`r${id}`);
+  if (tr) { tr.remove(); reNumber(); calcAll(); }
+}
+
+function reNumber() {
+  [...document.querySelectorAll('#itemsBody tr')].forEach((tr, i) => {
+    tr.querySelector('.cell-no').textContent = i + 1;
+  });
+}
+
+/* =============================================
+   CALCULATIONS
+   ============================================= */
+function calcAll() {
+  const loan    = parseFloat(document.getElementById('loanAmount').value) || 0;
+  const amounts = [...document.querySelectorAll('.iamt')].map(i => parseFloat(i.value) || 0);
+  const total   = amounts.reduce((a, b) => a + b, 0);
+  const diff    = loan - total;
+
+  document.getElementById('dispLoan').textContent    = '฿ ' + fmt(loan);
+  document.getElementById('dispExpense').textContent = '฿ ' + fmt(total);
+  document.getElementById('dispTotal').textContent   = '฿ ' + fmt(total);
+  document.getElementById('dispCount').textContent   = amounts.filter(a => a > 0).length;
+  document.getElementById('dispReturn').textContent  = diff >= 0 ? fmt(diff) : '0.00';
+  document.getElementById('dispExtra').textContent   = diff < 0  ? fmt(-diff) : '0.00';
+}
+
+function fmt(n) {
+  return n.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function escHtml(s) {
+  return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+/* =============================================
+   SAVE TO GOOGLE SHEET
+   ============================================= */
+async function saveToSheet() {
+  const company   = document.getElementById('company').value.trim();
+  const empName   = document.getElementById('empName').value.trim();
+  const submitDate= document.getElementById('submitDate').value;
+  const loanDate  = document.getElementById('loanDate').value;
+  const purpose   = document.getElementById('purpose').value.trim();
+  const loanAmount= parseFloat(document.getElementById('loanAmount').value) || 0;
+
+  if (!company || !empName || !submitDate || !purpose || !loanAmount) {
+    toast('กรุณากรอกข้อมูลให้ครบถ้วน', 'err'); return;
+  }
+  const rows = [...document.querySelectorAll('#itemsBody tr')];
+  if (!rows.length) { toast('กรุณาเพิ่มรายการค่าใช้จ่าย', 'err'); return; }
+
+  const items = rows.map((tr, i) => ({
+    no: i + 1,
+    date: tr.querySelector('.idate').value,
+    desc: tr.querySelector('.idesc').value,
+    receipt: tr.querySelector('.ireceipt').value,
+    amount: parseFloat(tr.querySelector('.iamt').value) || 0
+  }));
+
+  const totalExpense = items.reduce((a, b) => a + b.amount, 0);
+  const diff = loanAmount - totalExpense;
+
+  const payload = { company, empName, submitDate, loanDate, purpose, loanAmount, items, totalExpense, diff,
+    timestamp: new Date().toISOString() };
+
+  const btn = document.getElementById('saveBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<div class="spin"></div><span>กำลังบันทึก...</span>';
+
+  let saved = false;
+  if (SCRIPT_URL) {
+    try {
+      const fd = new FormData();
+      fd.append('data', JSON.stringify(payload));
+      await fetch(SCRIPT_URL, { method: 'POST', body: fd, mode: 'no-cors' });
+      saved = true;
+    } catch(e) { console.warn('Script fetch error:', e); }
+  }
+
+  btn.disabled = false;
+  btn.innerHTML = '<span>💾 บันทึกลง Sheet</span>';
+
+  if (saved) {
+    document.getElementById('successOverlay').classList.add('open');
+  } else {
+    // Fallback: open sheet + show instructions
+    window.open(SHEET_URL, '_blank');
+    toast('เปิด Google Sheet แล้ว — กรุณาตั้งค่า Apps Script URL ก่อนใช้งาน', 'err');
+  }
+}
+
+function openSheet() { window.open(SHEET_URL, '_blank'); }
+function closeModal() { document.getElementById('successOverlay').classList.remove('open'); }
+
+/* =============================================
+   PRINT & PDF
+   ============================================= */
+function printForm() {
+  updatePrintHeader();
+  window.print();
+}
+
+function updatePrintHeader() {
+  const c = document.getElementById('company').value || 'บริษัท..............................จำกัด';
+  const d = document.getElementById('submitDate').value || '';
+  const el = document.getElementById('printCompanyDate');
+  if (el) el.textContent = `${c}   |   วันที่: ${d}`;
+}
+
+function exportPDF() {
+  updatePrintHeader();
+  toast('เตรียมส่งออก PDF... กด Save/Print as PDF ในหน้าพิมพ์', 'ok');
+  setTimeout(() => {
+    window.print();
+  }, 400);
+}
+
+/* =============================================
+   CLEAR FORM
+   ============================================= */
+function clearForm() {
+  if (!confirm('ต้องการล้างข้อมูลทั้งหมดหรือไม่?')) return;
+  ['company','empName','submitDate','loanDate','purpose','loanAmount'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+  document.getElementById('itemsBody').innerHTML = '';
+  rowId = 0;
+  calcAll();
+  toast('ล้างข้อมูลเรียบร้อย', 'ok');
+}
+
+/* =============================================
+   TOAST
+   ============================================= */
+function toast(msg, type='ok') {
+  const el = document.getElementById('toast');
+  el.textContent = (type==='ok' ? '✓ ' : '✕ ') + msg;
+  el.className = `toast ${type} show`;
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.className = 'toast', 3500);
+}
+
+/* =============================================
+   PWA — Service Worker & Install
+   ============================================= */
+let deferredPrompt = null;
+
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredPrompt = e;
+  document.getElementById('installBanner').classList.add('show');
+});
+
+document.getElementById('installBtn').addEventListener('click', async () => {
+  if (!deferredPrompt) return;
+  deferredPrompt.prompt();
+  const { outcome } = await deferredPrompt.userChoice;
+  deferredPrompt = null;
+  document.getElementById('installBanner').classList.remove('show');
+  if (outcome === 'accepted') toast('ติดตั้งแอปสำเร็จ! 🎉', 'ok');
+});
+
+document.getElementById('dismissInstall').addEventListener('click', () => {
+  document.getElementById('installBanner').classList.remove('show');
+});
+
+window.addEventListener('appinstalled', () => {
+  toast('ติดตั้งแอปสำเร็จ! 🎉', 'ok');
+  document.getElementById('installBanner').classList.remove('show');
+});
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').then(reg => {
+      console.log('SW registered:', reg.scope);
+    }).catch(err => console.log('SW error:', err));
+  });
+}
+
+/* =============================================
+   INIT
+   ============================================= */
+document.getElementById('submitDate').value = new Date().toISOString().split('T')[0];
+addRow(); addRow(); addRow();
+</script>
+</body>
+</html>
