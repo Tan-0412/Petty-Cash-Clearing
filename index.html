@@ -879,7 +879,7 @@ function updatePrintHeader() {
   if (el) el.textContent = company;
   const set = (id, val) => { const e = document.getElementById(id); if (e) e.textContent = val; };
   set('pmName',    empName);
-  set('pmDate',    submitDate);
+  set('pmDate',    fmtDate(submitDate));
   set('pmPurpose', purpose);
   set('pmLoan',    '฿ ' + fmt(loan));
 }
@@ -1031,7 +1031,7 @@ function renderHistory(rows) {
     const itemRows = g.items.map((it, ii) => `
       <tr>
         <td>${ii + 1}</td>
-        <td>${it.itemDate || ''}</td>
+        <td>${fmtDate(it.itemDate)}</td>
         <td>${it.itemDesc || ''}</td>
         <td>${it.itemReceipt || ''}</td>
         <td class="amt">฿${fmtN(parseFloat(it.itemAmount)||0)}</td>
@@ -1041,7 +1041,7 @@ function renderHistory(rows) {
       <div class="hist-head" onclick="toggleGroup(${gi})">
         <div>
           <div class="hist-title">${m.empName} — ${m.purpose ? m.purpose.substring(0,40)+(m.purpose.length>40?'...':'') : ''}</div>
-          <div class="hist-sub">${m.company} | วันที่ยื่น: ${m.submitDate} | บันทึก: ${m.timestamp}</div>
+          <div class="hist-sub">${m.company} | วันที่ยื่น: ${fmtDate(m.submitDate)} | บันทึก: ${m.timestamp}</div>
         </div>
         <div class="hist-badges">
           <span class="hbadge gray">฿${fmtN(loan)}</span>
@@ -1082,6 +1082,28 @@ function fmtN(n) {
   return n.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
+function fmtDate(str) {
+  if (!str) return '';
+  // รองรับรูปแบบ YYYY-MM-DD หรือ DD/MM/YYYY หรือ DD/MM/BBBB
+  let d;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(str)) {
+    const [y, m, day] = str.split('-');
+    d = new Date(y, m - 1, day);
+  } else if (/^\d{1,2}\/\d{1,2}\/\d{2,4}$/.test(str)) {
+    const parts = str.split('/');
+    let year = parseInt(parts[2]);
+    if (year > 2400) year -= 543; // แปลงจาก พ.ศ. → ค.ศ.
+    d = new Date(year, parts[1] - 1, parts[0]);
+  } else {
+    return str; // ไม่รู้จักรูปแบบ คืนค่าเดิม
+  }
+  if (isNaN(d)) return str;
+  const months = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.',
+                  'ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+  const buddhistYear = d.getFullYear() + 543;
+  return `${d.getDate()} ${months[d.getMonth()]} ${buddhistYear}`;
+}
+
 function printHistoryGroup(gi, key) {
   const g = window._histGroups[key];
   if (!g) return;
@@ -1095,7 +1117,7 @@ function printHistoryGroup(gi, key) {
   const itemRows = g.items.map((it, i) => `
     <tr>
       <td style="text-align:center">${i+1}</td>
-      <td style="text-align:center">${it.itemDate||''}</td>
+      <td style="text-align:center">${fmtDate(it.itemDate)}</td>
       <td>${it.itemDesc||''}</td>
       <td style="text-align:center">${it.itemReceipt||''}</td>
       <td style="text-align:right;font-weight:600;">฿${fmtN(parseFloat(it.itemAmount)||0)}</td>
@@ -1108,7 +1130,7 @@ function printHistoryGroup(gi, key) {
         <div style="font-size:14px;margin-top:4px;color:#444;">${m.company}</div>
         <table style="margin:10px auto 0;font-size:13px;border-collapse:collapse;max-width:500px;width:100%;">
           <tr><td style="color:#555;width:160px;padding:3px 8px;">ชื่อผู้เบิกทดรอง</td><td style="font-weight:600;padding:3px 8px;">${m.empName}</td></tr>
-          <tr><td style="color:#555;padding:3px 8px;">วันที่ยื่นเรื่อง</td><td style="font-weight:600;padding:3px 8px;">${m.submitDate}</td></tr>
+          <tr><td style="color:#555;padding:3px 8px;">วันที่ยื่นเรื่อง</td><td style="font-weight:600;padding:3px 8px;">${fmtDate(m.submitDate)}</td></tr>
           <tr><td style="color:#555;padding:3px 8px;">วัตถุประสงค์</td><td style="font-weight:600;padding:3px 8px;">${m.purpose||''}</td></tr>
           <tr><td style="color:#555;padding:3px 8px;">ยอดเงินยืมทดรอง</td><td style="font-weight:600;padding:3px 8px;">฿${fmtN(loan)}</td></tr>
         </table>
