@@ -165,10 +165,20 @@ body {
 .tbl tbody td input:focus { background: var(--accent-light); }
 .tbl tbody td input[type=number] { text-align: right; }
 .tbl .cell-no { text-align: center; color: var(--text-muted); font-size: 12px; width: 36px; }
-.tbl .cell-date { width: 110px; }
-.tbl .cell-receipt { width: 100px; text-align: center; }
+.tbl .cell-date { width: 120px; }
+.tbl .cell-hasreceipt { width: 70px; text-align: center; }
+.tbl .cell-receipt { width: 110px; text-align: center; }
 .tbl .cell-amount { width: 120px; }
 .tbl .cell-del { width: 36px; text-align: center; }
+/* checkbox in table */
+.receipt-check {
+  width: 18px; height: 18px;
+  accent-color: var(--accent);
+  cursor: pointer;
+  vertical-align: middle;
+}
+/* dim receipt field when no receipt */
+.ireceipt:disabled { opacity: 0.35; cursor: not-allowed; }
 .del-btn {
   background: none;
   border: none;
@@ -561,7 +571,7 @@ body {
       </div>
       <table class="print-meta-table" id="printMetaTable" style="margin:0;width:100%;">
         <tr style="border-bottom:1px solid #e5dfd3;">
-          <td style="color:#666;width:180px;padding:9px 18px;font-weight:600;">ชื่อผู้เบิกทดรอง</td>
+          <td style="color:#666;width:180px;padding:9px 18px;font-weight:600;">ชื่อผู้เบิกเงินทดรอง</td>
           <td id="pmName" style="font-weight:700;font-size:14px;padding:9px 18px;">—</td>
           <td style="color:#666;width:160px;padding:9px 18px;font-weight:600;">วันที่ยื่นเรื่อง</td>
           <td id="pmDate" style="font-weight:700;padding:9px 18px;">—</td>
@@ -585,7 +595,7 @@ body {
           <input type="text" id="company" placeholder="ชื่อบริษัท จำกัด" autocomplete="organization" />
         </div>
         <div class="field span2">
-          <label>ชื่อผู้เบิกทดรอง <span class="req">*</span></label>
+          <label>ชื่อผู้เบิกเงินทดรอง <span class="req">*</span></label>
           <input type="text" id="empName" placeholder="ชื่อ-นามสกุล ผู้เบิก" autocomplete="name" />
         </div>
         <div class="field">
@@ -616,10 +626,11 @@ body {
         <thead>
           <tr>
             <th class="cell-no">No.</th>
-            <th class="cell-date">ว.ด.ป.</th>
+            <th class="cell-date">วันที่ทำรายการ</th>
             <th>รายการ</th>
+            <th class="cell-hasreceipt">มีใบเสร็จ</th>
             <th class="cell-receipt">เลขที่ใบเสร็จ</th>
-            <th class="cell-amount">จำนวนเงิน (฿)</th>
+            <th class="cell-amount">จำนวนเงิน</th>
             <th class="cell-del"></th>
           </tr>
         </thead>
@@ -763,23 +774,43 @@ const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbynbY6lNhAtMyU5IFXQf
    ============================================= */
 let rowId = 0;
 
-function addRow(dateVal='', descVal='', receiptVal='', amtVal='') {
+function addRow(dateVal='', descVal='', receiptVal='', amtVal='', hasReceiptVal=true) {
   rowId++;
   const id = rowId;
   const tbody = document.getElementById('itemsBody');
   const tr = document.createElement('tr');
   tr.id = `r${id}`;
+  const checkedAttr = hasReceiptVal ? 'checked' : '';
+  const disabledAttr = hasReceiptVal ? '' : 'disabled';
   tr.innerHTML = `
     <td class="cell-no">${tbody.rows.length + 1}</td>
     <td class="cell-date"><input type="date" class="idate" value="${dateVal}" oninput="calcAll()" /></td>
     <td><input type="text" class="idesc" placeholder="รายการค่าใช้จ่าย..." value="${escHtml(descVal)}" /></td>
-    <td class="cell-receipt"><input type="text" class="ireceipt" placeholder="เลขที่" value="${escHtml(receiptVal)}" style="text-align:center;" /></td>
+    <td class="cell-hasreceipt" style="text-align:center;">
+      <input type="checkbox" class="ihasreceipt receipt-check" ${checkedAttr} onchange="toggleReceipt(${id})" title="มีใบเสร็จ" />
+    </td>
+    <td class="cell-receipt"><input type="text" class="ireceipt" placeholder="เลขที่" value="${escHtml(receiptVal)}" style="text-align:center;" ${disabledAttr} /></td>
     <td class="cell-amount"><input type="number" class="iamt" placeholder="0.00" step="0.01" min="0" value="${amtVal}" oninput="calcAll()" /></td>
     <td class="cell-del"><button class="del-btn" onclick="delRow(${id})" title="ลบ">✕</button></td>
   `;
   tbody.appendChild(tr);
   reNumber();
   calcAll();
+}
+
+function toggleReceipt(id) {
+  const tr = document.getElementById(`r${id}`);
+  if (!tr) return;
+  const cb = tr.querySelector('.ihasreceipt');
+  const receiptInput = tr.querySelector('.ireceipt');
+  if (cb.checked) {
+    receiptInput.disabled = false;
+    receiptInput.placeholder = 'เลขที่';
+  } else {
+    receiptInput.disabled = true;
+    receiptInput.value = '';
+    receiptInput.placeholder = 'ไม่มีใบเสร็จ';
+  }
 }
 
 function delRow(id) {
@@ -839,6 +870,7 @@ async function saveToSheet() {
     no: i + 1,
     date: tr.querySelector('.idate').value,
     desc: tr.querySelector('.idesc').value,
+    hasReceipt: tr.querySelector('.ihasreceipt').checked,
     receipt: tr.querySelector('.ireceipt').value,
     amount: parseFloat(tr.querySelector('.iamt').value) || 0
   }));
@@ -1046,14 +1078,23 @@ function renderHistory(rows) {
         ? `<span class="hbadge red">จ่ายเพิ่ม ฿${fmtN(extra)}</span>`
         : `<span class="hbadge gray">ยอดพอดี</span>`;
 
-    const itemRows = g.items.map((it, ii) => `
+    const itemRows = g.items.map((it, ii) => {
+      const hasR = it.itemHasReceipt !== undefined ? it.itemHasReceipt : true;
+      const rNo = it.itemReceipt || '';
+      let rDisplay = '';
+      if (!hasR) rDisplay = '—';
+      else if (!rNo) rDisplay = 'ไม่ระบุเลขที่';
+      else rDisplay = rNo;
+      return `
       <tr>
         <td>${ii + 1}</td>
         <td>${fmtDate(it.itemDate)}</td>
         <td>${it.itemDesc || ''}</td>
-        <td>${it.itemReceipt || ''}</td>
-        <td class="amt">฿${fmtN(parseFloat(it.itemAmount)||0)}</td>
-      </tr>`).join('');
+        <td style="text-align:center;">${hasR ? '✓' : ''}</td>
+        <td style="${!hasR?'color:#aaa;':''}${rDisplay==='ไม่ระบุเลขที่'?'color:#999;font-style:italic;':''}">${rDisplay}</td>
+        <td class="amt">${fmtN(parseFloat(it.itemAmount)||0)}</td>
+      </tr>`;
+    }).join('');
 
     div.innerHTML = `
       <div class="hist-head" onclick="toggleGroup(${gi})">
@@ -1072,7 +1113,7 @@ function renderHistory(rows) {
       </div>
       <div class="hist-body" id="hgbody${gi}" style="display:none;">
         <table class="hist-tbl">
-          <thead><tr><th>No.</th><th>ว.ด.ป.</th><th>รายการ</th><th>เลขที่ใบเสร็จ</th><th>จำนวนเงิน</th></tr></thead>
+          <thead><tr><th>No.</th><th>วันที่ทำรายการ</th><th>รายการ</th><th>มีใบเสร็จ</th><th>เลขที่ใบเสร็จ</th><th>จำนวนเงิน</th></tr></thead>
           <tbody>${itemRows}</tbody>
         </table>
         <div class="hist-sum">
@@ -1138,14 +1179,23 @@ function printHistoryGroup(gi, key) {
   const ret   = parseFloat(m.diffReturn)||0;
   const extra = parseFloat(m.diffExtra)||0;
 
-  const itemRows = g.items.map((it, i) => `
+  const itemRows = g.items.map((it, i) => {
+    const hasReceipt = it.itemHasReceipt !== undefined ? it.itemHasReceipt : true; // default true for old data
+    const receiptNo = it.itemReceipt || '';
+    let receiptDisplay = '';
+    if (!hasReceipt) { receiptDisplay = '—'; }
+    else if (!receiptNo) { receiptDisplay = 'ไม่ระบุเลขที่'; }
+    else { receiptDisplay = receiptNo; }
+    return `
     <tr>
       <td style="text-align:center;padding:8px 10px;">${i+1}</td>
       <td style="text-align:center;padding:8px 10px;">${fmtDate(it.itemDate)}</td>
       <td style="text-align:left;padding:8px 10px;">${it.itemDesc||''}</td>
-      <td style="text-align:center;padding:8px 10px;">${it.itemReceipt||''}</td>
-      <td style="text-align:right;padding:8px 10px;font-weight:600;">฿${fmtN(parseFloat(it.itemAmount)||0)}</td>
-    </tr>`).join('');
+      <td style="text-align:center;padding:8px 10px;">${hasReceipt ? '✓' : ''}</td>
+      <td style="text-align:center;padding:8px 10px;${!hasReceipt?'color:#aaa;':''}${receiptDisplay==='ไม่ระบุเลขที่'?'color:#999;font-style:italic;':''}">${receiptDisplay}</td>
+      <td style="text-align:right;padding:8px 10px;font-weight:600;">${fmtN(parseFloat(it.itemAmount)||0)}</td>
+    </tr>`;
+  }).join('');
 
   const html = `
     <div style="font-family:'Sarabun',sans-serif;color:#1a1917;max-width:800px;margin:0 auto;">
@@ -1158,13 +1208,10 @@ function printHistoryGroup(gi, key) {
 
       <!-- Info Box -->
       <div style="border:1.5px solid #c8bfa8;border-radius:8px;overflow:hidden;margin-bottom:24px;">
-        <div style="background:#3d5a3e;padding:10px 20px;">
-          <span style="color:white;font-weight:700;font-size:13px;letter-spacing:0.08em;">ข้อมูลทั่วไป</span>
-        </div>
         <div style="padding:0;background:#fff;">
           <table style="width:100%;border-collapse:collapse;font-size:13px;">
             <tr style="border-bottom:1px solid #e5dfd3;">
-              <td style="padding:10px 20px;color:#666;width:200px;font-weight:600;">ชื่อผู้เบิกทดรอง</td>
+              <td style="padding:10px 20px;color:#666;width:200px;font-weight:600;">ชื่อผู้เบิกเงินทดรอง</td>
               <td style="padding:10px 20px;font-weight:700;font-size:14px;">${m.empName}</td>
               <td style="padding:10px 20px;color:#666;width:180px;font-weight:600;">วันที่ยื่นเรื่อง</td>
               <td style="padding:10px 20px;font-weight:700;">${fmtDate(m.submitDate)}</td>
@@ -1188,10 +1235,11 @@ function printHistoryGroup(gi, key) {
         <thead>
           <tr style="background:#f0ece4;">
             <th style="padding:10px 10px;border-bottom:2px solid #c8bfa8;border-top:1.5px solid #c8bfa8;text-align:center;width:40px;">No.</th>
-            <th style="padding:10px 10px;border-bottom:2px solid #c8bfa8;border-top:1.5px solid #c8bfa8;text-align:center;width:100px;">ว.ด.ป.</th>
+            <th style="padding:10px 10px;border-bottom:2px solid #c8bfa8;border-top:1.5px solid #c8bfa8;text-align:center;width:110px;">วันที่ทำรายการ</th>
             <th style="padding:10px 10px;border-bottom:2px solid #c8bfa8;border-top:1.5px solid #c8bfa8;text-align:left;">รายการ</th>
+            <th style="padding:10px 10px;border-bottom:2px solid #c8bfa8;border-top:1.5px solid #c8bfa8;text-align:center;width:70px;">มีใบเสร็จ</th>
             <th style="padding:10px 10px;border-bottom:2px solid #c8bfa8;border-top:1.5px solid #c8bfa8;text-align:center;width:110px;">เลขที่ใบเสร็จ</th>
-            <th style="padding:10px 10px;border-bottom:2px solid #c8bfa8;border-top:1.5px solid #c8bfa8;text-align:right;width:130px;">จำนวนเงิน (฿)</th>
+            <th style="padding:10px 10px;border-bottom:2px solid #c8bfa8;border-top:1.5px solid #c8bfa8;text-align:right;width:120px;">จำนวนเงิน</th>
           </tr>
         </thead>
         <tbody>${itemRows}</tbody>
