@@ -1,43 +1,94 @@
-const CACHE = 'petty-cash-v1';
-const ASSETS = [
-  './',
-  './index.html',
-  './manifest.json',
-  './icon-192.png',
-  './icon-512.png',
-  'https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap'
+// ============================================================
+//  Service Worker — Network First Strategy
+//  HTML/JS/CSS โหลดจาก network เสมอ, cache เป็น fallback
+// ============================================================
+
+const CACHE_NAME = 'clear-loan-v3';
+
+// ไฟล์ที่ cache ไว้สำหรับใช้ offline (static assets เท่านั้น)
+const STATIC_ASSETS = [
+  'icon-192.png',
+  'icon-512.png',
+  'manifest.json',
 ];
 
-self.addEventListener('install', e => {
-  e.waitUntil(
-    caches.open(CACHE).then(c => c.addAll(ASSETS)).then(() => self.skipWaiting())
+// ─── INSTALL ─────────────────────────────────────────────────
+self.addEventListener('install', event => {
+  // ข้าม waiting — activate ทันทีที่ติดตั้งเสร็จ
+  self.skipWaiting();
+  event.waitUntil(
+    caches.open(CACHE_NAME).then(cache => {
+      return cache.addAll(STATIC_ASSETS).catch(() => {
+        // ถ้า icon ยังไม่มีก็ไม่เป็นไร
+      });
+    })
   );
 });
 
-self.addEventListener('activate', e => {
-  e.waitUntil(
+// ─── ACTIVATE ────────────────────────────────────────────────
+self.addEventListener('activate', event => {
+  // ลบ cache เก่าทิ้งทั้งหมด
+  event.waitUntil(
     caches.keys().then(keys =>
-      Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
+      Promise.all(
+        keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k))
+      )
     ).then(() => self.clients.claim())
   );
 });
 
-self.addEventListener('fetch', e => {
-  if (e.request.method !== 'GET') return;
-  // Network-first for Google APIs, cache-first for app shell
-  if (e.request.url.includes('googleapis.com') ||
-      e.request.url.includes('docs.google.com') ||
-      e.request.url.includes('script.google.com')) {
-    e.respondWith(
-      fetch(e.request).catch(() => caches.match(e.request))
-    );
+// ─── FETCH — Network First ────────────────────────────────────
+self.addEventListener('fetch', event => {
+  const url = new URL(event.request.url);
+
+  // Google Fonts และ external API — ไม่แตะ
+  if (!url.origin.includes(self.location.origin)) {
     return;
   }
-  e.respondWith(
-    caches.match(e.request).then(cached => cached || fetch(e.request).then(res => {
-      const clone = res.clone();
-      caches.open(CACHE).then(c => c.put(e.request, clone));
-      return res;
-    }))
-  );
+
+  // HTML และ JS/CSS → Network First (ได้ของใหม่เสมอ)
+  if (
+    event.request.mode === 'navigate' ||
+    url.pathname.endsWith('.html') ||
+    url.pathname.endsWith('.js') ||
+    url.pathname.endsWith('.css')
+  ) {
+    event.respondWith(networkFirst(event.request));
+    return;
+  }
+
+  // รูปภาพ / manifest → Cache First (เปลี่ยนน้อย)
+  event.respondWith(cacheFirst(event.request));
 });
+
+// Network First: ลอง network ก่อน, ถ้าไม่มีสัญญาณใช้ cache
+async function networkFirst(request) {
+  const cache = await caches.open(CACHE_NAME);
+  try {
+    const response = await fetch(request, { cache: 'no-store' });
+    if (response.ok) {
+      cache.put(request, response.clone());
+    }
+    return response;
+  } catch {
+    const cached = await cache.match(request);
+    return cached || new Response('Offline — กรุณาเชื่อมต่ออินเทอร์เน็ต', {
+      status: 503,
+      headers: { 'Content-Type': 'text/plain; charset=utf-8' }
+    });
+  }
+}
+
+// Cache First: คืน cache ก่อน, ถ้าไม่มีค่อยไปดึง network
+async function cacheFirst(request) {
+  const cached = await caches.match(request);
+  if (cached) return cached;
+  try {
+    const response = await fetch(request);
+    const cache = await caches.open(CACHE_NAME);
+    cache.put(request, response.clone());
+    return response;
+  } catch {
+    return new Response('', { status: 404 });
+  }
+}
