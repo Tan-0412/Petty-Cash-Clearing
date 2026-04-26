@@ -628,7 +628,7 @@ body {
             <th class="cell-no">No.</th>
             <th class="cell-date">วันที่ทำรายการ</th>
             <th>รายการ</th>
-            <th class="cell-hasreceipt">มีใบเสร็จ</th>
+            <th class="cell-hasreceipt">เอกสารการรับเงิน</th>
             <th class="cell-receipt">เลขที่ใบเสร็จ</th>
             <th class="cell-amount">จำนวนเงิน</th>
             <th class="cell-del"></th>
@@ -806,7 +806,7 @@ function addRow(dateVal='', descVal='', receiptVal='', amtVal='', hasReceiptVal=
     <td class="cell-date"><input type="date" class="idate" value="${dateVal}" oninput="calcAll()" /></td>
     <td><input type="text" class="idesc" placeholder="รายการค่าใช้จ่าย..." value="${escHtml(descVal)}" /></td>
     <td class="cell-hasreceipt" style="text-align:center;">
-      <input type="checkbox" class="ihasreceipt receipt-check" ${checkedAttr} onchange="toggleReceipt(${id})" title="มีใบเสร็จ" />
+      <input type="checkbox" class="ihasreceipt receipt-check" ${checkedAttr} onchange="toggleReceipt(${id})" title="เอกสารการรับเงิน" />
     </td>
     <td class="cell-receipt"><input type="text" class="ireceipt" placeholder="เลขที่" value="${escHtml(receiptVal)}" style="text-align:center;" ${disabledAttr} /></td>
     <td class="cell-amount"><input type="number" class="iamt" placeholder="0.00" step="0.01" min="0" value="${amtVal}" oninput="calcAll()" /></td>
@@ -828,7 +828,7 @@ function toggleReceipt(id) {
   } else {
     receiptInput.disabled = true;
     receiptInput.value = '';
-    receiptInput.placeholder = 'ไม่มีใบเสร็จ';
+    receiptInput.placeholder = 'ไม่มีเอกสารการรับเงิน';
   }
 }
 
@@ -1151,7 +1151,7 @@ function renderHistory(rows) {
       </div>
       <div class="hist-body" id="hgbody${gi}" style="display:none;">
         <table class="hist-tbl">
-          <thead><tr><th>No.</th><th>วันที่ทำรายการ</th><th>รายการ</th><th>มีใบเสร็จ</th><th>เลขที่ใบเสร็จ</th><th>จำนวนเงิน</th></tr></thead>
+          <thead><tr><th>No.</th><th>วันที่ทำรายการ</th><th>รายการ</th><th>เอกสารการรับเงิน</th><th>เลขที่ใบเสร็จ</th><th>จำนวนเงิน</th></tr></thead>
           <tbody>${itemRows}</tbody>
         </table>
         <div class="hist-sum">
@@ -1275,7 +1275,7 @@ function printHistoryGroup(gi, key) {
             <th style="padding:10px 10px;border-bottom:2px solid #c8bfa8;border-top:1.5px solid #c8bfa8;text-align:center;width:40px;">No.</th>
             <th style="padding:10px 10px;border-bottom:2px solid #c8bfa8;border-top:1.5px solid #c8bfa8;text-align:center;width:110px;">วันที่ทำรายการ</th>
             <th style="padding:10px 10px;border-bottom:2px solid #c8bfa8;border-top:1.5px solid #c8bfa8;text-align:left;">รายการ</th>
-            <th style="padding:10px 10px;border-bottom:2px solid #c8bfa8;border-top:1.5px solid #c8bfa8;text-align:center;width:70px;">มีใบเสร็จ</th>
+            <th style="padding:10px 10px;border-bottom:2px solid #c8bfa8;border-top:1.5px solid #c8bfa8;text-align:center;width:70px;">เอกสารการรับเงิน</th>
             <th style="padding:10px 10px;border-bottom:2px solid #c8bfa8;border-top:1.5px solid #c8bfa8;text-align:center;width:110px;">เลขที่ใบเสร็จ</th>
             <th style="padding:10px 10px;border-bottom:2px solid #c8bfa8;border-top:1.5px solid #c8bfa8;text-align:right;width:120px;">จำนวนเงิน</th>
           </tr>
