@@ -402,10 +402,77 @@ body {
 @keyframes spin { to { transform: rotate(360deg); } }
 
 /* ===================== PRINT ===================== */
+/* TAB NAV */
+.tab-nav {
+  background: #2e4430;
+  display: flex;
+  padding: 0 16px;
+  gap: 4px;
+}
+.tab-btn {
+  font-family: 'Sarabun', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 12px 20px;
+  border: none;
+  background: transparent;
+  color: rgba(255,255,255,0.65);
+  cursor: pointer;
+  border-bottom: 3px solid transparent;
+  transition: all 0.15s;
+}
+.tab-btn:hover { color: rgba(255,255,255,0.9); }
+.tab-btn.active { color: white; border-bottom-color: #a8d5a8; }
+
+/* HISTORY */
+.hist-group {
+  border: 1px solid var(--border-light);
+  border-radius: var(--r);
+  margin-bottom: 14px;
+  overflow: hidden;
+}
+.hist-head {
+  background: #f5f2ec;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  cursor: pointer;
+  border-bottom: 1px solid var(--border-light);
+}
+.hist-head:hover { background: #ede9e0; }
+.hist-title { font-weight: 700; font-size: 15px; }
+.hist-sub { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+.hist-badges { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.hbadge {
+  font-size: 12px; font-weight: 600; padding: 3px 10px;
+  border-radius: 20px; white-space: nowrap;
+}
+.hbadge.green { background: #edf5ed; color: var(--accent); border: 1px solid #b3d4b3; }
+.hbadge.red { background: #fdf0f0; color: var(--danger); border: 1px solid #e0b3b3; }
+.hbadge.gray { background: #f0f0f0; color: #555; border: 1px solid #ddd; }
+.hist-actions { display: flex; gap: 6px; flex-shrink: 0; }
+.hist-body { padding: 0; }
+.hist-tbl { width: 100%; border-collapse: collapse; font-size: 13px; }
+.hist-tbl th { background: #faf9f6; padding: 8px 10px; font-size: 11px; font-weight: 700;
+  color: var(--text-muted); letter-spacing: 0.05em; border-bottom: 1px solid var(--border-light);
+  text-align: center; }
+.hist-tbl th:nth-child(3) { text-align: left; }
+.hist-tbl td { padding: 8px 10px; border-bottom: 1px solid var(--border-light); text-align: center; vertical-align: middle; }
+.hist-tbl td:nth-child(3) { text-align: left; }
+.hist-tbl tr:last-child td { border-bottom: none; }
+.hist-tbl tr:hover td { background: #fafaf7; }
+.hist-tbl .amt { font-weight: 600; }
+.hist-sum { background: #f5f2ec; padding: 10px 16px; display: flex; justify-content: flex-end; gap: 24px; font-size: 13px; }
+.hist-sum span { font-weight: 700; }
+.hist-empty { text-align: center; padding: 48px 16px; color: var(--text-muted); }
+
+/* PRINT VIEW */
 @media print {
   .topbar, .bottom-bar, .install-banner, .add-row-btn,
   .del-btn, .toast, .overlay, #installBanner,
-  .no-print { display: none !important; }
+  .no-print, .tab-nav { display: none !important; }
   body { background: white; }
   .page { padding: 0; max-width: 100%; }
   .card { box-shadow: none; border: 1px solid #ccc; margin-bottom: 10px; }
@@ -424,6 +491,8 @@ body {
   .tbl tbody td input { border: none; background: transparent; }
   .sum-row.highlight { background: #333 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   .bottom-bar { display: none !important; }
+  #printView { display: block !important; }
+  #formPage, #historyPage { display: none !important; }
   @page { margin: 15mm; size: A4; }
 }
 .print-header { display: none; }
@@ -467,8 +536,15 @@ body {
   </div>
 </div>
 
+<!-- Tab Nav -->
+<div class="tab-nav no-print">
+  <button class="tab-btn active" id="tabForm" onclick="switchTab('form')">📝 กรอกฟอร์ม</button>
+  <button class="tab-btn" id="tabHistory" onclick="switchTab('history')">📂 ประวัติรายการ</button>
+</div>
+
 <div class="page">
 
+  <div id="formPage">
   <!-- Print Header (visible only when printing) -->
   <div class="print-header" id="printHeader">
     <h2 style="font-size:22px;font-weight:700;letter-spacing:0.02em;">ใบเคลียร์เงินยืมทดรอง</h2>
@@ -603,7 +679,30 @@ body {
     </div>
   </div>
 
+  </div><!-- /formPage -->
+
+  <!-- ===== HISTORY PAGE ===== -->
+  <div id="historyPage" style="display:none;">
+
+    <div class="card">
+      <div class="card-head" style="justify-content:space-between;">
+        <span>📂 ประวัติใบเคลียร์เงินยืมทดรอง</span>
+        <button class="btn btn-outline" style="padding:5px 14px;font-size:13px;" onclick="loadHistory()">🔄 รีเฟรช</button>
+      </div>
+      <div class="card-body" id="historyBody">
+        <div style="text-align:center;padding:32px;color:var(--text-muted);">
+          <div style="font-size:32px;margin-bottom:8px;">⏳</div>
+          <div>กำลังโหลดข้อมูล...</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
 </div><!-- /page -->
+
+<!-- ===== PRINT VIEW (hidden, shown only when printing history) ===== -->
+<div id="printView" style="display:none;"></div>
 
 <!-- Bottom Action Bar -->
 <div class="bottom-bar">
@@ -860,6 +959,204 @@ if ('serviceWorker' in navigator) {
    ============================================= */
 document.getElementById('submitDate').value = new Date().toISOString().split('T')[0];
 addRow(); addRow(); addRow();
+
+/* =============================================
+   TABS
+   ============================================= */
+function switchTab(tab) {
+  const isForm = tab === 'form';
+  document.getElementById('formPage').style.display = isForm ? '' : 'none';
+  document.getElementById('historyPage').style.display = isForm ? 'none' : '';
+  document.getElementById('tabForm').classList.toggle('active', isForm);
+  document.getElementById('tabHistory').classList.toggle('active', !isForm);
+  document.querySelector('.bottom-bar').style.display = isForm ? '' : 'none';
+  if (!isForm) loadHistory();
+}
+
+/* =============================================
+   HISTORY — load from Apps Script
+   ============================================= */
+async function loadHistory() {
+  const body = document.getElementById('historyBody');
+  body.innerHTML = '<div style="text-align:center;padding:32px;color:var(--text-muted);"><div style="font-size:32px;margin-bottom:8px;">⏳</div><div>กำลังโหลดข้อมูล...</div></div>';
+  try {
+    const url = SCRIPT_URL + '?action=read&t=' + Date.now();
+    const res = await fetch(url);
+    const json = await res.json();
+    if (!json.data || json.data.length === 0) {
+      body.innerHTML = '<div class="hist-empty"><div style="font-size:40px;">📭</div><div style="margin-top:8px;">ยังไม่มีข้อมูล</div></div>';
+      return;
+    }
+    renderHistory(json.data);
+  } catch(e) {
+    body.innerHTML = '<div class="hist-empty"><div style="font-size:40px;">⚠️</div><div style="margin-top:8px;">โหลดข้อมูลไม่สำเร็จ<br><small>' + e.message + '</small></div><br><button class="btn btn-outline" onclick="loadHistory()">ลองใหม่</button></div>';
+  }
+}
+
+function renderHistory(rows) {
+  // Group rows by timestamp+name (same submission)
+  const groups = {};
+  rows.forEach(r => {
+    const key = r.timestamp + '||' + r.empName + '||' + r.submitDate;
+    if (!groups[key]) groups[key] = { meta: r, items: [] };
+    groups[key].items.push(r);
+  });
+
+  const body = document.getElementById('historyBody');
+  if (Object.keys(groups).length === 0) {
+    body.innerHTML = '<div class="hist-empty"><div style="font-size:40px;">📭</div><div style="margin-top:8px;">ยังไม่มีข้อมูล</div></div>';
+    return;
+  }
+
+  const keys = Object.keys(groups).reverse(); // newest first
+  body.innerHTML = '';
+  keys.forEach((key, gi) => {
+    const g = groups[key];
+    const m = g.meta;
+    const total = parseFloat(m.totalExpense) || 0;
+    const ret   = parseFloat(m.diffReturn)   || 0;
+    const extra = parseFloat(m.diffExtra)    || 0;
+    const loan  = parseFloat(m.loanAmount)   || 0;
+
+    const div = document.createElement('div');
+    div.className = 'hist-group';
+    div.id = 'hg' + gi;
+
+    const badgeHtml = ret > 0
+      ? `<span class="hbadge green">คืน ฿${fmtN(ret)}</span>`
+      : extra > 0
+        ? `<span class="hbadge red">จ่ายเพิ่ม ฿${fmtN(extra)}</span>`
+        : `<span class="hbadge gray">ยอดพอดี</span>`;
+
+    const itemRows = g.items.map((it, ii) => `
+      <tr>
+        <td>${ii + 1}</td>
+        <td>${it.itemDate || ''}</td>
+        <td>${it.itemDesc || ''}</td>
+        <td>${it.itemReceipt || ''}</td>
+        <td class="amt">฿${fmtN(parseFloat(it.itemAmount)||0)}</td>
+      </tr>`).join('');
+
+    div.innerHTML = `
+      <div class="hist-head" onclick="toggleGroup(${gi})">
+        <div>
+          <div class="hist-title">${m.empName} — ${m.purpose ? m.purpose.substring(0,40)+(m.purpose.length>40?'...':'') : ''}</div>
+          <div class="hist-sub">${m.company} | วันที่ยื่น: ${m.submitDate} | บันทึก: ${m.timestamp}</div>
+        </div>
+        <div class="hist-badges">
+          <span class="hbadge gray">฿${fmtN(loan)}</span>
+          <span class="hbadge gray">${g.items.length} รายการ</span>
+          ${badgeHtml}
+        </div>
+        <div class="hist-actions">
+          <button class="btn btn-outline" style="padding:5px 12px;font-size:12px;" onclick="event.stopPropagation();printHistoryGroup(${gi},'${key}')">🖨 พิมพ์</button>
+        </div>
+      </div>
+      <div class="hist-body" id="hgbody${gi}" style="display:none;">
+        <table class="hist-tbl">
+          <thead><tr><th>No.</th><th>ว.ด.ป.</th><th>รายการ</th><th>เลขที่ใบเสร็จ</th><th>จำนวนเงิน</th></tr></thead>
+          <tbody>${itemRows}</tbody>
+        </table>
+        <div class="hist-sum">
+          <div>ยอดเงินยืม: <span>฿${fmtN(loan)}</span></div>
+          <div>รวมจ่าย: <span>฿${fmtN(total)}</span></div>
+          ${ret>0 ? `<div style="color:var(--accent)">คืน: <span>฿${fmtN(ret)}</span></div>` : ''}
+          ${extra>0 ? `<div style="color:var(--danger)">จ่ายเพิ่ม: <span>฿${fmtN(extra)}</span></div>` : ''}
+        </div>
+      </div>
+    `;
+    body.appendChild(div);
+  });
+
+  // store groups data for printing
+  window._histGroups = groups;
+  window._histKeys = keys;
+}
+
+function toggleGroup(gi) {
+  const b = document.getElementById('hgbody' + gi);
+  b.style.display = b.style.display === 'none' ? '' : 'none';
+}
+
+function fmtN(n) {
+  return n.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function printHistoryGroup(gi, key) {
+  const g = window._histGroups[key];
+  if (!g) return;
+  const m = g.meta;
+  const total = parseFloat(m.totalExpense)||0;
+  const loan  = parseFloat(m.loanAmount)||0;
+  const ret   = parseFloat(m.diffReturn)||0;
+  const extra = parseFloat(m.diffExtra)||0;
+  const diff  = loan - total;
+
+  const itemRows = g.items.map((it, i) => `
+    <tr>
+      <td style="text-align:center">${i+1}</td>
+      <td style="text-align:center">${it.itemDate||''}</td>
+      <td>${it.itemDesc||''}</td>
+      <td style="text-align:center">${it.itemReceipt||''}</td>
+      <td style="text-align:right;font-weight:600;">฿${fmtN(parseFloat(it.itemAmount)||0)}</td>
+    </tr>`).join('');
+
+  const html = `
+    <div style="font-family:'Sarabun',sans-serif;color:#1a1917;">
+      <div style="text-align:center;margin-bottom:16px;padding-bottom:12px;border-bottom:2px solid #333;">
+        <h2 style="font-size:22px;font-weight:700;">ใบเคลียร์เงินยืมทดรอง</h2>
+        <div style="font-size:14px;margin-top:4px;color:#444;">${m.company}</div>
+        <table style="margin:10px auto 0;font-size:13px;border-collapse:collapse;max-width:500px;width:100%;">
+          <tr><td style="color:#555;width:160px;padding:3px 8px;">ชื่อผู้เบิกทดรอง</td><td style="font-weight:600;padding:3px 8px;">${m.empName}</td></tr>
+          <tr><td style="color:#555;padding:3px 8px;">วันที่ยื่นเรื่อง</td><td style="font-weight:600;padding:3px 8px;">${m.submitDate}</td></tr>
+          <tr><td style="color:#555;padding:3px 8px;">วัตถุประสงค์</td><td style="font-weight:600;padding:3px 8px;">${m.purpose||''}</td></tr>
+          <tr><td style="color:#555;padding:3px 8px;">ยอดเงินยืมทดรอง</td><td style="font-weight:600;padding:3px 8px;">฿${fmtN(loan)}</td></tr>
+        </table>
+      </div>
+
+      <table style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:16px;">
+        <thead>
+          <tr style="background:#f0ece4;">
+            <th style="padding:9px 8px;border-bottom:2px solid #c8bfa8;text-align:center;width:36px;">No.</th>
+            <th style="padding:9px 8px;border-bottom:2px solid #c8bfa8;text-align:center;width:100px;">ว.ด.ป.</th>
+            <th style="padding:9px 8px;border-bottom:2px solid #c8bfa8;text-align:left;">รายการ</th>
+            <th style="padding:9px 8px;border-bottom:2px solid #c8bfa8;text-align:center;width:100px;">เลขที่ใบเสร็จ</th>
+            <th style="padding:9px 8px;border-bottom:2px solid #c8bfa8;text-align:right;width:120px;">จำนวนเงิน (฿)</th>
+          </tr>
+        </thead>
+        <tbody>${itemRows}</tbody>
+      </table>
+
+      <table style="width:240px;margin-left:auto;border-collapse:collapse;font-size:13px;">
+        <tr><td style="padding:5px 12px;color:#555;">ยอดเงินยืมทดรอง</td><td style="padding:5px 12px;text-align:right;font-weight:600;">฿${fmtN(loan)}</td></tr>
+        <tr><td style="padding:5px 12px;color:#555;">หัก รวมค่าใช้จ่าย</td><td style="padding:5px 12px;text-align:right;font-weight:600;">฿${fmtN(total)}</td></tr>
+        <tr style="background:#3d5a3e;color:white;">
+          <td style="padding:8px 12px;font-weight:700;">รวมค่าใช้จ่ายทั้งหมด</td>
+          <td style="padding:8px 12px;text-align:right;font-weight:700;font-size:16px;">฿${fmtN(total)}</td>
+        </tr>
+        ${ret>0 ? `<tr><td style="padding:5px 12px;color:#3d5a3e;font-weight:600;">คงเหลือ (ต้องคืน)</td><td style="padding:5px 12px;text-align:right;font-weight:700;color:#3d5a3e;">฿${fmtN(ret)}</td></tr>` : ''}
+        ${extra>0 ? `<tr><td style="padding:5px 12px;color:#8b2a2a;font-weight:600;">ต้องจ่ายเพิ่ม</td><td style="padding:5px 12px;text-align:right;font-weight:700;color:#8b2a2a;">฿${fmtN(extra)}</td></tr>` : ''}
+      </table>
+
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:24px;margin-top:40px;text-align:center;">
+        ${['ผู้เบิกทดรอง','บัญชี (ผู้ตรวจเอกสาร)','ผู้บังคับบัญชา','ผู้อนุมัติ'].map(s=>`
+          <div>
+            <div style="height:40px;border-bottom:1px solid #aaa;margin-bottom:6px;"></div>
+            <span style="font-size:12px;color:#777;">${s}</span>
+          </div>`).join('')}
+      </div>
+    </div>
+  `;
+
+  document.getElementById('printView').innerHTML = html;
+
+  // hide everything else, print, restore
+  document.getElementById('historyPage').style.display = 'none';
+  document.getElementById('printView').style.display = 'block';
+  window.print();
+  document.getElementById('printView').style.display = 'none';
+  document.getElementById('historyPage').style.display = '';
+}
 </script>
 </body>
 </html>
