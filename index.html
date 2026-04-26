@@ -404,7 +404,8 @@ body {
 /* ===================== PRINT ===================== */
 @media print {
   .topbar, .bottom-bar, .install-banner, .add-row-btn,
-  .del-btn, .toast, .overlay, #installBanner { display: none !important; }
+  .del-btn, .toast, .overlay, #installBanner,
+  .no-print { display: none !important; }
   body { background: white; }
   .page { padding: 0; max-width: 100%; }
   .card { box-shadow: none; border: 1px solid #ccc; margin-bottom: 10px; }
@@ -416,6 +417,10 @@ body {
     padding-bottom: 12px;
     border-bottom: 2px solid #333;
   }
+  .print-meta-table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 13px; }
+  .print-meta-table td { padding: 3px 8px; text-align: left; }
+  .print-meta-table td:first-child { color: #555; width: 160px; }
+  .print-meta-table td:last-child { font-weight: 600; }
   .tbl tbody td input { border: none; background: transparent; }
   .sum-row.highlight { background: #333 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   .bottom-bar { display: none !important; }
@@ -466,12 +471,18 @@ body {
 
   <!-- Print Header (visible only when printing) -->
   <div class="print-header" id="printHeader">
-    <h2 style="font-size:20px;font-weight:700;">ใบเคลียร์เงินยืมทดรอง</h2>
-    <div id="printCompanyDate" style="font-size:14px;margin-top:4px;"></div>
+    <h2 style="font-size:22px;font-weight:700;letter-spacing:0.02em;">ใบเคลียร์เงินยืมทดรอง</h2>
+    <div id="printCompanyName" style="font-size:14px;margin-top:2px;color:#444;"></div>
+    <table class="print-meta-table" id="printMetaTable" style="margin:10px auto 0;max-width:500px;">
+      <tr><td>ชื่อผู้เบิกทดรอง</td><td id="pmName">—</td></tr>
+      <tr><td>วันที่ยื่นเรื่อง</td><td id="pmDate">—</td></tr>
+      <tr><td>วัตถุประสงค์</td><td id="pmPurpose">—</td></tr>
+      <tr><td>ยอดเงินยืมทดรอง</td><td id="pmLoan">—</td></tr>
+    </table>
   </div>
 
   <!-- Section 1: ข้อมูลทั่วไป -->
-  <div class="card">
+  <div class="card no-print">
     <div class="card-head">📋 ข้อมูลทั่วไป</div>
     <div class="card-body">
       <div class="g2" style="margin-bottom:14px;">
@@ -759,10 +770,19 @@ function printForm() {
 }
 
 function updatePrintHeader() {
-  const c = document.getElementById('company').value || 'บริษัท..............................จำกัด';
-  const d = document.getElementById('submitDate').value || '';
-  const el = document.getElementById('printCompanyDate');
-  if (el) el.textContent = `${c}   |   วันที่: ${d}`;
+  const company  = document.getElementById('company').value   || 'บริษัท..............................จำกัด';
+  const empName  = document.getElementById('empName').value   || '—';
+  const submitDate = document.getElementById('submitDate').value || '—';
+  const purpose  = document.getElementById('purpose').value   || '—';
+  const loan     = parseFloat(document.getElementById('loanAmount').value) || 0;
+
+  const el = document.getElementById('printCompanyName');
+  if (el) el.textContent = company;
+  const set = (id, val) => { const e = document.getElementById(id); if (e) e.textContent = val; };
+  set('pmName',    empName);
+  set('pmDate',    submitDate);
+  set('pmPurpose', purpose);
+  set('pmLoan',    '฿ ' + fmt(loan));
 }
 
 function exportPDF() {
