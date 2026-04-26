@@ -760,6 +760,25 @@ body {
   </div>
 </div>
 
+<!-- Delete Confirm Modal -->
+<div class="overlay" id="deleteOverlay">
+  <div class="modal">
+    <div class="modal-icon">🗑️</div>
+    <h3>ยืนยันการลบ</h3>
+    <p id="deleteModalDesc">ต้องการลบรายการนี้ใช่หรือไม่?<br><small style="color:var(--danger);">ข้อมูลจะถูกลบออกจาก Google Sheet ถาวร</small></p>
+    <div style="display:flex;gap:10px;justify-content:center;margin-top:4px;">
+      <button class="btn btn-outline" onclick="closeDeleteModal()">ยกเลิก</button>
+      <button class="btn btn-danger-outline" id="confirmDeleteBtn" onclick="doDeleteGroup()">🗑 ลบถาวร</button>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Mode Banner (shown at top of form when editing) -->
+<div id="editBanner" style="display:none;background:#fff3cd;border-bottom:2px solid #f0ad4e;padding:10px 20px;align-items:center;justify-content:space-between;gap:12px;font-size:13px;font-weight:600;color:#7d5a00;">
+  <span>✏️ โหมดแก้ไข — กำลังแก้ไขรายการที่บันทึกแล้ว (จะลบข้อมูลเก่าและบันทึกใหม่)</span>
+  <button class="btn btn-outline" style="font-size:12px;padding:5px 12px;white-space:nowrap;" onclick="cancelEdit()">✕ ยกเลิกแก้ไข</button>
+</div>
+
 <script>
 /* =============================================
    CONFIG — แก้ไข URL ของ Google Apps Script ที่นี่
@@ -881,9 +900,20 @@ async function saveToSheet() {
   const payload = { company, empName, submitDate, loanDate, purpose, loanAmount, items, totalExpense, diff,
     timestamp: new Date().toISOString() };
 
+  // ถ้าอยู่ในโหมดแก้ไข ให้ส่ง oldKey ไปด้วยเพื่อให้ Apps Script ลบ row เก่าก่อน
+  if (_editKey) {
+    const oldGroup = window._histGroups && window._histGroups[_editKey];
+    if (oldGroup) {
+      payload.editMode = true;
+      payload.oldTimestamp  = oldGroup.meta.timestamp;
+      payload.oldEmpName    = oldGroup.meta.empName;
+      payload.oldSubmitDate = oldGroup.meta.submitDate;
+    }
+  }
+
   const btn = document.getElementById('saveBtn');
   btn.disabled = true;
-  btn.innerHTML = '<div class="spin"></div><span>กำลังบันทึก...</span>';
+  btn.innerHTML = '<div class="spin"></div><span>' + (_editKey ? 'กำลังอัปเดต...' : 'กำลังบันทึก...') + '</span>';
 
   let saved = false;
   if (SCRIPT_URL) {
@@ -897,6 +927,12 @@ async function saveToSheet() {
 
   btn.disabled = false;
   btn.innerHTML = '<span>💾 บันทึกลง Sheet</span>';
+
+  // ถ้าอยู่ในโหมดแก้ไข ให้ reset
+  if (_editKey) {
+    _editKey = null;
+    document.getElementById('editBanner').style.display = 'none';
+  }
 
   if (saved) {
     document.getElementById('successOverlay').classList.add('open');
@@ -1109,6 +1145,8 @@ function renderHistory(rows) {
         </div>
         <div class="hist-actions">
           <button class="btn btn-outline" style="padding:5px 12px;font-size:12px;" onclick="event.stopPropagation();printHistoryGroup(${gi},'${key}')">🖨 พิมพ์</button>
+          <button class="btn btn-outline" style="padding:5px 12px;font-size:12px;color:var(--accent);border-color:var(--accent);" onclick="event.stopPropagation();editGroup('${key}')">✏️ แก้ไข</button>
+          <button class="btn btn-danger-outline" style="padding:5px 12px;font-size:12px;" onclick="event.stopPropagation();confirmDeleteGroup('${key}')">🗑 ลบ</button>
         </div>
       </div>
       <div class="hist-body" id="hgbody${gi}" style="display:none;">
@@ -1295,6 +1333,123 @@ function printHistoryGroup(gi, key) {
   window.print();
   document.getElementById('printView').style.display = 'none';
   document.getElementById('historyPage').style.display = '';
+}
+
+/* =============================================
+   EDIT MODE
+   ============================================= */
+let _editKey = null; // key ของ group ที่กำลังแก้ไข
+
+function editGroup(key) {
+  const g = window._histGroups && window._histGroups[key];
+  if (!g) { toast('ไม่พบข้อมูล', 'err'); return; }
+  const m = g.meta;
+
+  // เก็บ key ไว้สำหรับ save
+  _editKey = key;
+
+  // โหลดข้อมูลลงฟอร์ม
+  document.getElementById('company').value    = m.company    || '';
+  document.getElementById('empName').value    = m.empName    || '';
+  document.getElementById('purpose').value    = m.purpose    || '';
+  document.getElementById('loanAmount').value = m.loanAmount || '';
+
+  // แปลงวันที่กลับเป็น YYYY-MM-DD สำหรับ input[type=date]
+  document.getElementById('submitDate').value = toInputDate(m.submitDate);
+  document.getElementById('loanDate').value   = toInputDate(m.loanDate);
+
+  // ล้างรายการเก่าแล้วโหลดรายการใหม่
+  document.getElementById('itemsBody').innerHTML = '';
+  rowId = 0;
+  g.items.forEach(it => {
+    const hasR = it.itemHasReceipt !== undefined ? !!it.itemHasReceipt : true;
+    addRow(toInputDate(it.itemDate), it.itemDesc || '', it.itemReceipt || '', it.itemAmount || '', hasR);
+  });
+
+  calcAll();
+
+  // แสดง edit banner
+  const banner = document.getElementById('editBanner');
+  banner.style.display = 'flex';
+
+  // สลับไปแท็บฟอร์ม
+  switchTab('form');
+
+  // Scroll ขึ้นบน
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  toast('โหลดข้อมูลเรียบร้อย — แก้ไขแล้วกด "บันทึกลง Sheet"', 'ok');
+}
+
+function cancelEdit() {
+  _editKey = null;
+  document.getElementById('editBanner').style.display = 'none';
+  // reset save button label ให้ปกติ
+  document.getElementById('saveBtn').innerHTML = '<span>💾 บันทึกลง Sheet</span>';
+  toast('ยกเลิกการแก้ไขแล้ว', 'ok');
+}
+
+// แปลงวันที่ต่างรูปแบบกลับเป็น YYYY-MM-DD
+function toInputDate(str) {
+  if (!str) return '';
+  if (/^\d{4}-\d{2}-\d{2}$/.test(str)) return str;
+  if (/^\d{4}-\d{2}-\d{2}T/.test(str)) return str.substring(0, 10);
+  if (/^\d{1,2}\/\d{1,2}\/\d{2,4}$/.test(str)) {
+    const p = str.split('/');
+    let y = parseInt(p[2]);
+    if (y > 2400) y -= 543;
+    return `${y}-${String(p[1]).padStart(2,'0')}-${String(p[0]).padStart(2,'0')}`;
+  }
+  return '';
+}
+
+/* =============================================
+   DELETE
+   ============================================= */
+let _deleteKey = null;
+
+function confirmDeleteGroup(key) {
+  const g = window._histGroups && window._histGroups[key];
+  if (!g) return;
+  _deleteKey = key;
+  const m = g.meta;
+  document.getElementById('deleteModalDesc').innerHTML =
+    `ต้องการลบรายการของ <strong>${m.empName}</strong><br>วันที่ยื่น: ${fmtDate(m.submitDate)} | ${g.items.length} รายการ<br><small style="color:var(--danger);">ข้อมูลจะถูกลบออกจาก Google Sheet ถาวร</small>`;
+  document.getElementById('deleteOverlay').classList.add('open');
+}
+
+function closeDeleteModal() {
+  _deleteKey = null;
+  document.getElementById('deleteOverlay').classList.remove('open');
+}
+
+async function doDeleteGroup() {
+  if (!_deleteKey) return;
+  const g = window._histGroups[_deleteKey];
+  if (!g) return;
+
+  const btn = document.getElementById('confirmDeleteBtn');
+  btn.disabled = true;
+  btn.textContent = 'กำลังลบ...';
+
+  try {
+    const fd = new FormData();
+    fd.append('action', 'delete');
+    fd.append('data', JSON.stringify({
+      timestamp: g.meta.timestamp,
+      empName:   g.meta.empName,
+      submitDate: g.meta.submitDate
+    }));
+    await fetch(SCRIPT_URL, { method: 'POST', body: fd, mode: 'no-cors' });
+    closeDeleteModal();
+    toast('ลบรายการเรียบร้อยแล้ว', 'ok');
+    // รีโหลดประวัติ
+    setTimeout(() => loadHistory(), 600);
+  } catch(e) {
+    toast('เกิดข้อผิดพลาดในการลบ: ' + e.message, 'err');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '🗑 ลบถาวร';
+  }
 }
 </script>
 </body>
