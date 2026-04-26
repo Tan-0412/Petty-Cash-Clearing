@@ -488,6 +488,11 @@ body {
   .print-meta-table td { padding: 3px 8px; text-align: left; }
   .print-meta-table td:first-child { color: #555; width: 160px; }
   .print-meta-table td:last-child { font-weight: 600; }
+  .print-meta-table tr { border-bottom: 1px solid #e5dfd3; }
+  /* Divider after last item row */
+  #itemsBody tr:last-child { border-bottom: 2px solid #3d5a3e !important; }
+  /* Sig card divider top */
+  .card:last-of-type { border-top: 2px solid #333 !important; }
   .tbl tbody td input { border: none; background: transparent; }
   .sum-row.highlight { background: #333 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   .bottom-bar { display: none !important; }
@@ -547,14 +552,27 @@ body {
   <div id="formPage">
   <!-- Print Header (visible only when printing) -->
   <div class="print-header" id="printHeader">
-    <h2 style="font-size:22px;font-weight:700;letter-spacing:0.02em;">ใบเคลียร์เงินยืมทดรอง</h2>
-    <div id="printCompanyName" style="font-size:14px;margin-top:2px;color:#444;"></div>
-    <table class="print-meta-table" id="printMetaTable" style="margin:10px auto 0;max-width:500px;">
-      <tr><td>ชื่อผู้เบิกทดรอง</td><td id="pmName">—</td></tr>
-      <tr><td>วันที่ยื่นเรื่อง</td><td id="pmDate">—</td></tr>
-      <tr><td>วัตถุประสงค์</td><td id="pmPurpose">—</td></tr>
-      <tr><td>ยอดเงินยืมทดรอง</td><td id="pmLoan">—</td></tr>
-    </table>
+    <h2 style="font-size:24px;font-weight:700;letter-spacing:0.02em;margin-bottom:4px;">ใบเคลียร์เงินยืมทดรอง</h2>
+    <div id="printCompanyName" style="font-size:14px;margin-top:2px;color:#555;"></div>
+    <!-- Info Box -->
+    <div style="border:1.5px solid #c8bfa8;border-radius:8px;overflow:hidden;margin:16px auto 0;max-width:700px;text-align:left;">
+      <div style="background:#3d5a3e;padding:8px 18px;">
+        <span style="color:white;font-weight:700;font-size:12px;letter-spacing:0.08em;">ข้อมูลทั่วไป</span>
+      </div>
+      <table class="print-meta-table" id="printMetaTable" style="margin:0;width:100%;">
+        <tr style="border-bottom:1px solid #e5dfd3;">
+          <td style="color:#666;width:180px;padding:9px 18px;font-weight:600;">ชื่อผู้เบิกทดรอง</td>
+          <td id="pmName" style="font-weight:700;font-size:14px;padding:9px 18px;">—</td>
+          <td style="color:#666;width:160px;padding:9px 18px;font-weight:600;">วันที่ยื่นเรื่อง</td>
+          <td id="pmDate" style="font-weight:700;padding:9px 18px;">—</td>
+        </tr>
+        <tr>
+          <td style="color:#666;padding:9px 18px;font-weight:600;vertical-align:top;">วัตถุประสงค์</td>
+          <td id="pmPurpose" colspan="2" style="font-weight:600;padding:9px 18px;line-height:1.6;">—</td>
+          <td style="padding:9px 18px;"><span style="color:#666;font-weight:600;">ยอดเงินยืม: </span><span id="pmLoan" style="font-weight:700;color:#3d5a3e;font-size:14px;">—</span></td>
+        </tr>
+      </table>
+    </div>
   </div>
 
   <!-- Section 1: ข้อมูลทั่วไป -->
@@ -1084,24 +1102,31 @@ function fmtN(n) {
 
 function fmtDate(str) {
   if (!str) return '';
-  // รองรับรูปแบบ YYYY-MM-DD หรือ DD/MM/YYYY หรือ DD/MM/BBBB
+  const months = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.',
+                  'ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
   let d;
-  if (/^\d{4}-\d{2}-\d{2}$/.test(str)) {
+  // ISO datetime: 2026-04-24T17:00:00.000Z or 2026-04-24T17:00:00
+  if (/^\d{4}-\d{2}-\d{2}T/.test(str)) {
+    // แปลงเป็น local date โดยดึงแค่วันที่จาก ISO string (เพื่อหลีกเลี่ยง timezone shift)
+    const datePart = str.substring(0, 10);
+    const [y, m, day] = datePart.split('-');
+    d = new Date(parseInt(y), parseInt(m) - 1, parseInt(day));
+  } else if (/^\d{4}-\d{2}-\d{2}$/.test(str)) {
     const [y, m, day] = str.split('-');
-    d = new Date(y, m - 1, day);
+    d = new Date(parseInt(y), parseInt(m) - 1, parseInt(day));
   } else if (/^\d{1,2}\/\d{1,2}\/\d{2,4}$/.test(str)) {
     const parts = str.split('/');
     let year = parseInt(parts[2]);
-    if (year > 2400) year -= 543; // แปลงจาก พ.ศ. → ค.ศ.
-    d = new Date(year, parts[1] - 1, parts[0]);
+    if (year > 2400) year -= 543;
+    d = new Date(year, parseInt(parts[1]) - 1, parseInt(parts[0]));
   } else {
-    return str; // ไม่รู้จักรูปแบบ คืนค่าเดิม
+    return str;
   }
-  if (isNaN(d)) return str;
-  const months = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.',
-                  'ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+  if (!d || isNaN(d)) return str;
   const buddhistYear = d.getFullYear() + 543;
-  return `${d.getDate()} ${months[d.getMonth()]} ${buddhistYear}`;
+  // แสดงปี พ.ศ. แบบย่อ 2 หลัก เช่น 69
+  const shortYear = String(buddhistYear).slice(-2);
+  return `${d.getDate()} ${months[d.getMonth()]} ${shortYear}`;
 }
 
 function printHistoryGroup(gi, key) {
@@ -1112,61 +1137,105 @@ function printHistoryGroup(gi, key) {
   const loan  = parseFloat(m.loanAmount)||0;
   const ret   = parseFloat(m.diffReturn)||0;
   const extra = parseFloat(m.diffExtra)||0;
-  const diff  = loan - total;
 
   const itemRows = g.items.map((it, i) => `
     <tr>
-      <td style="text-align:center">${i+1}</td>
-      <td style="text-align:center">${fmtDate(it.itemDate)}</td>
-      <td>${it.itemDesc||''}</td>
-      <td style="text-align:center">${it.itemReceipt||''}</td>
-      <td style="text-align:right;font-weight:600;">฿${fmtN(parseFloat(it.itemAmount)||0)}</td>
+      <td style="text-align:center;padding:8px 10px;">${i+1}</td>
+      <td style="text-align:center;padding:8px 10px;">${fmtDate(it.itemDate)}</td>
+      <td style="text-align:left;padding:8px 10px;">${it.itemDesc||''}</td>
+      <td style="text-align:center;padding:8px 10px;">${it.itemReceipt||''}</td>
+      <td style="text-align:right;padding:8px 10px;font-weight:600;">฿${fmtN(parseFloat(it.itemAmount)||0)}</td>
     </tr>`).join('');
 
   const html = `
-    <div style="font-family:'Sarabun',sans-serif;color:#1a1917;">
-      <div style="text-align:center;margin-bottom:16px;padding-bottom:12px;border-bottom:2px solid #333;">
-        <h2 style="font-size:22px;font-weight:700;">ใบเคลียร์เงินยืมทดรอง</h2>
-        <div style="font-size:14px;margin-top:4px;color:#444;">${m.company}</div>
-        <table style="margin:10px auto 0;font-size:13px;border-collapse:collapse;max-width:500px;width:100%;">
-          <tr><td style="color:#555;width:160px;padding:3px 8px;">ชื่อผู้เบิกทดรอง</td><td style="font-weight:600;padding:3px 8px;">${m.empName}</td></tr>
-          <tr><td style="color:#555;padding:3px 8px;">วันที่ยื่นเรื่อง</td><td style="font-weight:600;padding:3px 8px;">${fmtDate(m.submitDate)}</td></tr>
-          <tr><td style="color:#555;padding:3px 8px;">วัตถุประสงค์</td><td style="font-weight:600;padding:3px 8px;">${m.purpose||''}</td></tr>
-          <tr><td style="color:#555;padding:3px 8px;">ยอดเงินยืมทดรอง</td><td style="font-weight:600;padding:3px 8px;">฿${fmtN(loan)}</td></tr>
-        </table>
+    <div style="font-family:'Sarabun',sans-serif;color:#1a1917;max-width:800px;margin:0 auto;">
+
+      <!-- Title -->
+      <div style="text-align:center;margin-bottom:20px;">
+        <h2 style="font-size:24px;font-weight:700;letter-spacing:0.02em;margin-bottom:4px;">ใบเคลียร์เงินยืมทดรอง</h2>
+        <div style="font-size:14px;color:#555;">${m.company}</div>
       </div>
 
-      <table style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:16px;">
+      <!-- Info Box -->
+      <div style="border:1.5px solid #c8bfa8;border-radius:8px;overflow:hidden;margin-bottom:24px;">
+        <div style="background:#3d5a3e;padding:10px 20px;">
+          <span style="color:white;font-weight:700;font-size:13px;letter-spacing:0.08em;">ข้อมูลทั่วไป</span>
+        </div>
+        <div style="padding:0;background:#fff;">
+          <table style="width:100%;border-collapse:collapse;font-size:13px;">
+            <tr style="border-bottom:1px solid #e5dfd3;">
+              <td style="padding:10px 20px;color:#666;width:200px;font-weight:600;">ชื่อผู้เบิกทดรอง</td>
+              <td style="padding:10px 20px;font-weight:700;font-size:14px;">${m.empName}</td>
+              <td style="padding:10px 20px;color:#666;width:180px;font-weight:600;">วันที่ยื่นเรื่อง</td>
+              <td style="padding:10px 20px;font-weight:700;">${fmtDate(m.submitDate)}</td>
+            </tr>
+            <tr style="border-bottom:1px solid #e5dfd3;">
+              <td style="padding:10px 20px;color:#666;font-weight:600;">ได้รับเงินทดรองวันที่</td>
+              <td style="padding:10px 20px;font-weight:700;">${m.loanDate ? fmtDate(m.loanDate) : '—'}</td>
+              <td style="padding:10px 20px;color:#666;font-weight:600;">ยอดเงินยืมทดรอง</td>
+              <td style="padding:10px 20px;font-weight:700;font-size:14px;color:#3d5a3e;">฿${fmtN(loan)}</td>
+            </tr>
+            <tr>
+              <td style="padding:10px 20px;color:#666;font-weight:600;vertical-align:top;">วัตถุประสงค์</td>
+              <td colspan="3" style="padding:10px 20px;font-weight:600;line-height:1.6;">${m.purpose||''}</td>
+            </tr>
+          </table>
+        </div>
+      </div>
+
+      <!-- Items Table -->
+      <table style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:0;">
         <thead>
           <tr style="background:#f0ece4;">
-            <th style="padding:9px 8px;border-bottom:2px solid #c8bfa8;text-align:center;width:36px;">No.</th>
-            <th style="padding:9px 8px;border-bottom:2px solid #c8bfa8;text-align:center;width:100px;">ว.ด.ป.</th>
-            <th style="padding:9px 8px;border-bottom:2px solid #c8bfa8;text-align:left;">รายการ</th>
-            <th style="padding:9px 8px;border-bottom:2px solid #c8bfa8;text-align:center;width:100px;">เลขที่ใบเสร็จ</th>
-            <th style="padding:9px 8px;border-bottom:2px solid #c8bfa8;text-align:right;width:120px;">จำนวนเงิน (฿)</th>
+            <th style="padding:10px 10px;border-bottom:2px solid #c8bfa8;border-top:1.5px solid #c8bfa8;text-align:center;width:40px;">No.</th>
+            <th style="padding:10px 10px;border-bottom:2px solid #c8bfa8;border-top:1.5px solid #c8bfa8;text-align:center;width:100px;">ว.ด.ป.</th>
+            <th style="padding:10px 10px;border-bottom:2px solid #c8bfa8;border-top:1.5px solid #c8bfa8;text-align:left;">รายการ</th>
+            <th style="padding:10px 10px;border-bottom:2px solid #c8bfa8;border-top:1.5px solid #c8bfa8;text-align:center;width:110px;">เลขที่ใบเสร็จ</th>
+            <th style="padding:10px 10px;border-bottom:2px solid #c8bfa8;border-top:1.5px solid #c8bfa8;text-align:right;width:130px;">จำนวนเงิน (฿)</th>
           </tr>
         </thead>
         <tbody>${itemRows}</tbody>
       </table>
 
-      <table style="width:240px;margin-left:auto;border-collapse:collapse;font-size:13px;">
-        <tr><td style="padding:5px 12px;color:#555;">ยอดเงินยืมทดรอง</td><td style="padding:5px 12px;text-align:right;font-weight:600;">฿${fmtN(loan)}</td></tr>
-        <tr><td style="padding:5px 12px;color:#555;">หัก รวมค่าใช้จ่าย</td><td style="padding:5px 12px;text-align:right;font-weight:600;">฿${fmtN(total)}</td></tr>
-        <tr style="background:#3d5a3e;color:white;">
-          <td style="padding:8px 12px;font-weight:700;">รวมค่าใช้จ่ายทั้งหมด</td>
-          <td style="padding:8px 12px;text-align:right;font-weight:700;font-size:16px;">฿${fmtN(total)}</td>
+      <!-- Divider after last item -->
+      <div style="border-top:2px solid #3d5a3e;margin-bottom:0;"></div>
+
+      <!-- Summary -->
+      <table style="width:260px;margin-left:auto;border-collapse:collapse;font-size:13px;margin-top:0;">
+        <tr>
+          <td style="padding:8px 14px;color:#555;">ยอดเงินยืมทดรอง</td>
+          <td style="padding:8px 14px;text-align:right;font-weight:600;">฿${fmtN(loan)}</td>
         </tr>
-        ${ret>0 ? `<tr><td style="padding:5px 12px;color:#3d5a3e;font-weight:600;">คงเหลือ (ต้องคืน)</td><td style="padding:5px 12px;text-align:right;font-weight:700;color:#3d5a3e;">฿${fmtN(ret)}</td></tr>` : ''}
-        ${extra>0 ? `<tr><td style="padding:5px 12px;color:#8b2a2a;font-weight:600;">ต้องจ่ายเพิ่ม</td><td style="padding:5px 12px;text-align:right;font-weight:700;color:#8b2a2a;">฿${fmtN(extra)}</td></tr>` : ''}
+        <tr>
+          <td style="padding:8px 14px;color:#555;">หัก รวมค่าใช้จ่าย</td>
+          <td style="padding:8px 14px;text-align:right;font-weight:600;">฿${fmtN(total)}</td>
+        </tr>
+        <tr style="border-top:1.5px solid #c8bfa8;">
+          <td style="padding:8px 14px;color:#555;">รวมค่าใช้จ่ายทั้งหมด</td>
+          <td style="padding:8px 14px;text-align:right;font-weight:700;font-size:15px;">฿${fmtN(total)}</td>
+        </tr>
+        <tr style="border-top:1.5px solid #c8bfa8;">
+          ${ret>0
+            ? `<td style="padding:9px 14px;font-weight:700;color:#3d5a3e;">คงเหลือ (ต้องคืน)</td><td style="padding:9px 14px;text-align:right;font-weight:700;font-size:15px;color:#3d5a3e;">฿${fmtN(ret)}</td>`
+            : extra>0
+              ? `<td style="padding:9px 14px;font-weight:700;color:#8b2a2a;">ต้องจ่ายเพิ่ม</td><td style="padding:9px 14px;text-align:right;font-weight:700;font-size:15px;color:#8b2a2a;">฿${fmtN(extra)}</td>`
+              : `<td style="padding:9px 14px;font-weight:700;color:#555;">ยอดพอดี</td><td style="padding:9px 14px;text-align:right;font-weight:700;color:#555;">—</td>`
+          }
+        </tr>
       </table>
 
-      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:24px;margin-top:40px;text-align:center;">
+      <!-- Divider before signatures -->
+      <div style="border-top:2px solid #333;margin-top:36px;margin-bottom:28px;"></div>
+
+      <!-- Signatures -->
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:28px;text-align:center;">
         ${['ผู้เบิกทดรอง','บัญชี (ผู้ตรวจเอกสาร)','ผู้บังคับบัญชา','ผู้อนุมัติ'].map(s=>`
           <div>
-            <div style="height:40px;border-bottom:1px solid #aaa;margin-bottom:6px;"></div>
-            <span style="font-size:12px;color:#777;">${s}</span>
+            <div style="height:44px;border-bottom:1px solid #999;margin-bottom:6px;"></div>
+            <span style="font-size:12px;color:#666;">${s}</span>
           </div>`).join('')}
       </div>
+
     </div>
   `;
 
