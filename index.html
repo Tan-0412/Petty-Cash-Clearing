@@ -1036,7 +1036,14 @@ if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('sw.js').then(reg => {
       console.log('SW registered:', reg.scope);
+      // บังคับเช็ค update ทุกครั้งที่โหลดหน้า
+      reg.update();
     }).catch(err => console.log('SW error:', err));
+
+    // ถ้ามี SW ใหม่ติดตั้งเสร็จ ให้ reload หน้าอัตโนมัติ
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      window.location.reload();
+    });
   });
 }
 
