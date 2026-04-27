@@ -433,46 +433,128 @@ body {
 .tab-btn.active { color: white; border-bottom-color: #a8d5a8; }
 
 /* HISTORY */
+/* ===================== HISTORY ===================== */
 .hist-group {
   border: 1px solid var(--border-light);
-  border-radius: var(--r);
-  margin-bottom: 14px;
+  border-radius: 10px;
+  margin-bottom: 12px;
   overflow: hidden;
+  background: var(--surface);
+  box-shadow: var(--shadow2);
 }
 .hist-head {
   background: #f5f2ec;
-  padding: 12px 16px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
+  padding: 14px 16px 10px;
   cursor: pointer;
   border-bottom: 1px solid var(--border-light);
+  transition: background 0.15s;
 }
 .hist-head:hover { background: #ede9e0; }
-.hist-title { font-weight: 700; font-size: 15px; }
-.hist-sub { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
-.hist-badges { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.hist-head:active { background: #e5dfd3; }
+
+/* ── ชื่อ + วัตถุประสงค์ ── */
+.hist-name {
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.hist-purpose {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-top: 2px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  line-height: 1.45;
+}
+.hist-meta {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 5px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+}
+.hist-meta-item { display: flex; align-items: center; gap: 4px; }
+
+/* ── badge row ── */
+.hist-badge-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border-light);
+}
 .hbadge {
-  font-size: 12px; font-weight: 600; padding: 3px 10px;
-  border-radius: 20px; white-space: nowrap;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 20px;
+  white-space: nowrap;
 }
 .hbadge.green { background: #edf5ed; color: var(--accent); border: 1px solid #b3d4b3; }
-.hbadge.red { background: #fdf0f0; color: var(--danger); border: 1px solid #e0b3b3; }
-.hbadge.gray { background: #f0f0f0; color: #555; border: 1px solid #ddd; }
-.hist-actions { display: flex; gap: 6px; flex-shrink: 0; }
+.hbadge.red   { background: #fdf0f0; color: var(--danger); border: 1px solid #e0b3b3; }
+.hbadge.gray  { background: #f0f0f0; color: #555;          border: 1px solid #ddd; }
+.hbadge.blue  { background: #e8f0fe; color: #1a56a8;       border: 1px solid #b3cef0; }
+
+/* ── action row ── */
+.hist-actions {
+  display: flex;
+  gap: 8px;
+  padding: 10px 16px;
+  background: #faf9f6;
+  border-top: 1px solid var(--border-light);
+  flex-wrap: wrap;
+}
+.hist-action-btn {
+  flex: 1;
+  min-width: 0;
+  font-family: 'Sarabun', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 8px 6px;
+  border-radius: 7px;
+  border: 1.5px solid var(--border);
+  background: white;
+  color: var(--text);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.hist-action-btn:hover { border-color: var(--text-muted); background: var(--bg); }
+.hist-action-btn.edit  { color: var(--accent); border-color: var(--accent); }
+.hist-action-btn.edit:hover  { background: var(--accent-light); }
+.hist-action-btn.del   { color: var(--danger); border-color: #e0b3b3; }
+.hist-action-btn.del:hover   { background: #fdf0f0; }
+
+/* ── detail body ── */
 .hist-body { padding: 0; }
 .hist-tbl { width: 100%; border-collapse: collapse; font-size: 13px; }
-.hist-tbl th { background: #faf9f6; padding: 8px 10px; font-size: 11px; font-weight: 700;
-  color: var(--text-muted); letter-spacing: 0.05em; border-bottom: 1px solid var(--border-light);
-  text-align: center; }
+.hist-tbl th {
+  background: #faf9f6; padding: 8px 10px; font-size: 11px; font-weight: 700;
+  color: var(--text-muted); letter-spacing: 0.05em;
+  border-bottom: 1px solid var(--border-light); text-align: center;
+}
 .hist-tbl th:nth-child(3) { text-align: left; }
 .hist-tbl td { padding: 8px 10px; border-bottom: 1px solid var(--border-light); text-align: center; vertical-align: middle; }
 .hist-tbl td:nth-child(3) { text-align: left; }
 .hist-tbl tr:last-child td { border-bottom: none; }
 .hist-tbl tr:hover td { background: #fafaf7; }
 .hist-tbl .amt { font-weight: 600; }
-.hist-sum { background: #f5f2ec; padding: 10px 16px; display: flex; justify-content: flex-end; gap: 24px; font-size: 13px; }
+.hist-sum {
+  background: #f5f2ec; padding: 10px 16px;
+  display: flex; justify-content: flex-end;
+  flex-wrap: wrap; gap: 8px 20px; font-size: 13px;
+}
 .hist-sum span { font-weight: 700; }
 .hist-empty { text-align: center; padding: 48px 16px; color: var(--text-muted); }
 
@@ -1097,11 +1179,11 @@ function renderHistory(rows) {
 
     const badgeHtml = (() => {
       const retStr = (ret > 0)
-        ? `<span class="hbadge green">คงเหลือ (คืน) ${fmtN(ret)}</span>`
+        ? `<span class="hbadge green">💚 คืน ${fmtN(ret)}</span>`
         : (extra > 0)
-          ? `<span class="hbadge red">คงเหลือ (เกิน) ${fmtN(extra)}</span>`
-          : `<span class="hbadge gray">ยอดพอดี</span>`;
-      return `<span class="hbadge gray">เบิก ${fmtN(loan)}</span><span class="hbadge gray">ใช้ไป ${fmtN(total)}</span>${retStr}`;
+          ? `<span class="hbadge red">🔴 เกิน ${fmtN(extra)}</span>`
+          : `<span class="hbadge gray">✓ ยอดพอดี</span>`;
+      return `<span class="hbadge blue">${g.items.length} รายการ</span><span class="hbadge gray">เบิก ${fmtN(loan)}</span><span class="hbadge gray">ใช้ไป ${fmtN(total)}</span>${retStr}`;
     })();
 
     const itemRows = g.items.map((it, ii) => {
@@ -1124,30 +1206,34 @@ function renderHistory(rows) {
 
     div.innerHTML = `
       <div class="hist-head" onclick="toggleGroup(${gi})">
-        <div>
-          <div class="hist-title">${m.empName} — ${m.purpose ? m.purpose.substring(0,40)+(m.purpose.length>40?'...':'') : ''}</div>
-          <div class="hist-sub">${m.company} | วันที่ยื่นเบิก: ${fmtDate(m.submitDate)}</div>
-          <div class="hist-sub">บันทึกเมื่อ: ${fmtTimestamp(m.timestamp)}</div>
+        <div class="hist-name">${m.empName}</div>
+        <div class="hist-purpose">${m.purpose ? m.purpose : '—'}</div>
+        <div class="hist-meta">
+          <span class="hist-meta-item">🏢 ${m.company}</span>
+          <span class="hist-meta-item">📅 ${fmtDate(m.submitDate)}</span>
+          <span class="hist-meta-item">🕐 ${fmtTimestamp(m.timestamp)}</span>
         </div>
-        <div class="hist-badges">
+        <div class="hist-badge-row">
           ${badgeHtml}
         </div>
-        <div class="hist-actions">
-          <button class="btn btn-outline" style="padding:5px 12px;font-size:12px;" onclick="event.stopPropagation();printHistoryGroup(${gi}, window._histKeys[${gi}])">🖨 พิมพ์</button>
-          <button class="btn btn-outline" style="padding:5px 12px;font-size:12px;color:var(--accent);border-color:var(--accent);" onclick="event.stopPropagation();editGroup(window._histKeys[${gi}])">✏️ แก้ไข</button>
-          <button class="btn btn-danger-outline" style="padding:5px 12px;font-size:12px;" onclick="event.stopPropagation();confirmDeleteGroup(window._histKeys[${gi}])">🗑 ลบ</button>
-        </div>
+      </div>
+      <div class="hist-actions" onclick="event.stopPropagation()">
+        <button class="hist-action-btn" onclick="printHistoryGroup(${gi}, window._histKeys[${gi}])">🖨 พิมพ์</button>
+        <button class="hist-action-btn edit" onclick="editGroup(window._histKeys[${gi}])">✏️ แก้ไข</button>
+        <button class="hist-action-btn del" onclick="confirmDeleteGroup(window._histKeys[${gi}])">🗑 ลบ</button>
       </div>
       <div class="hist-body" id="hgbody${gi}" style="display:none;">
+        <div style="overflow-x:auto;">
         <table class="hist-tbl">
-          <thead><tr><th>No.</th><th>วันที่ทำรายการ</th><th>รายการ</th><th>เอกสารการรับเงิน</th><th>เลขที่ใบเสร็จ</th><th>จำนวนเงิน</th></tr></thead>
+          <thead><tr><th>No.</th><th>วันที่</th><th>รายการ</th><th>ใบเสร็จ</th><th>เลขที่</th><th>จำนวนเงิน</th></tr></thead>
           <tbody>${itemRows}</tbody>
         </table>
+        </div>
         <div class="hist-sum">
-          <div>ยอดเบิกเงินยืม: <span>${fmtN(loan)}</span></div>
-          <div>ยอดเงินที่ใช้ไป: <span>${fmtN(total)}</span></div>
-          ${ret>0 ? `<div style="color:var(--accent)">คงเหลือ (คืน): <span>${fmtN(ret)}</span></div>` : ''}
-          ${extra>0 ? `<div style="color:var(--danger)">คงเหลือ (เกิน): <span>${fmtN(extra)}</span></div>` : ''}
+          <div>เบิก: <span>${fmtN(loan)}</span></div>
+          <div>ใช้ไป: <span>${fmtN(total)}</span></div>
+          ${ret>0   ? `<div style="color:var(--accent)">คืน: <span>${fmtN(ret)}</span></div>` : ''}
+          ${extra>0 ? `<div style="color:var(--danger)">เกิน: <span>${fmtN(extra)}</span></div>` : ''}
         </div>
       </div>
     `;
