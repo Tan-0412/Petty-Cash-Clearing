@@ -435,6 +435,37 @@ body {
 }
 @media (max-width: 400px) { .bottom-bar { flex-wrap: wrap; } }
 
+/* ── DUPLICATE WARNING ── */
+.dup-warning {
+  display:none;
+  background: #fff8e1; border: 1.5px solid #f0ad4e;
+  border-radius: var(--r); padding: 12px 16px;
+  margin-top: 10px; font-size: 13px; color: #7d5a00;
+  line-height: 1.6;
+}
+.dup-warning strong { color: #8b2a2a; }
+/* badge บนรายการที่เคยเบิกแล้ว */
+.used-badge {
+  display: inline-block;
+  font-size: 10px; font-weight: 700;
+  background: #fdf0f0; color: var(--danger);
+  border: 1px solid #e0b3b3;
+  border-radius: 20px; padding: 2px 8px;
+  margin-left: 6px; white-space: nowrap;
+  vertical-align: middle;
+}
+.dpi.already-used { background: #fff8f8; }
+.dpi.already-used:hover { background: #fdf0f0; }
+.dpi.already-used .dpi-amt { color: #aaa; }
+.dup-warning {
+  display:none;
+  background: #fff8e1; border: 1.5px solid #f0ad4e;
+  border-radius: var(--r); padding: 12px 16px;
+  margin-top: 10px; font-size: 13px; color: #7d5a00;
+  line-height: 1.6;
+}
+.dup-warning strong { color: #8b2a2a; }
+
 /* ── BORROW TYPE SELECTOR ── */
 .btype-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px; }
 .btype-card {
@@ -496,7 +527,7 @@ body {
           <div class="company-name">บริษัท อีซูซุคิงส์ยนต์กรุงเทพ จำกัด</div>
           <div class="petty-limit-row">
             <span class="petty-limit-label">💰 วงเงินสดย่อย</span>
-            <span class="petty-limit-val" id="limitKK">16,000 ฿</span>
+            <span class="petty-limit-val" id="limitKK">15,000 ฿</span>
           </div>
         </div>
 
@@ -517,7 +548,7 @@ body {
       <div id="pettyInitBox" style="display:none;margin-top:14px;">
         <div class="field">
           <label>💰 ยอดเงินสดย่อยตั้งต้น (บาท) <span class="req">*</span></label>
-          <input type="text" id="pettyAmtInput" placeholder="ระบุยอดเงินสดย่อยของรอบนี้ เช่น 16000"
+          <input type="text" id="pettyAmtInput" placeholder="ระบุยอดเงินสดย่อยของรอบนี้ เช่น 15000"
             inputmode="decimal" style="font-size:18px;font-weight:700;text-align:right;"
             oninput="onPettyAmtInput(this)" onblur="onPettyAmtBlur(this)" />
           <div style="font-size:11px;color:var(--text-muted);margin-top:3px;" id="pettyAmtHint"></div>
@@ -584,11 +615,11 @@ body {
       <div class="fetch-panel">
         <div class="fetch-row">
           <div class="field">
-            <label>วันที่เริ่มต้น</label>
+            <label>วันที่เริ่มต้น <span style="color:var(--danger);">*</span></label>
             <input type="date" id="filterDateFrom" />
           </div>
           <div class="field">
-            <label>วันที่สิ้นสุด</label>
+            <label>วันที่สิ้นสุด <span style="color:var(--danger);">*</span></label>
             <input type="date" id="filterDateTo" />
           </div>
           <button class="btn-fetch" id="fetchBtn" onclick="fetchDeposits()">
@@ -596,6 +627,7 @@ body {
           </button>
         </div>
         <div class="fetch-status" id="fetchStatus"></div>
+        <div class="dup-warning" id="dupWarning"></div>
       </div>
 
       <!-- Pick panel -->
@@ -728,7 +760,7 @@ const COMPANIES = {
     code:      'KK',
     name:      'บริษัท อีซูซุคิงส์ยนต์กรุงเทพ จำกัด',
     shortName: 'คิงส์ยนต์กรุงเทพ',
-    pettyAmt:  16000,
+    pettyAmt:  15000,
     cssClass:  'kk',
   },
   KY: {
@@ -744,6 +776,7 @@ const COMPANIES = {
    STATE
    ════════════════════════════════════════════════════════ */
 let _selectedCompany = null;  // 'KK' | 'KY'
+let _usedPettyNos    = new Set(); // เลขที่ใบสำคัญที่เคยบันทึกไปแล้ว
 let _pettyAmount     = 0;
 let _fetchedData     = [];
 let _rowId           = 0;
@@ -831,6 +864,10 @@ function selectBtype(type) {
    ════════════════════════════════════════════════════════ */
 async function fetchDeposits() {
   if (!_selectedCompany) { toast('กรุณาเลือกบริษัทก่อน', 'err'); return; }
+  const df = document.getElementById('filterDateFrom').value;
+  const dt = document.getElementById('filterDateTo').value;
+  if (!df || !dt) { toast('กรุณาระบุวันที่เริ่มต้นและวันที่สิ้นสุดก่อนดึงข้อมูล', 'err'); return; }
+  if (df > dt)    { toast('วันที่เริ่มต้นต้องไม่มากกว่าวันที่สิ้นสุด', 'err'); return; }
 
   const btn    = document.getElementById('fetchBtn');
   const btnTxt = document.getElementById('fetchBtnText');
@@ -881,6 +918,35 @@ async function fetchDeposits() {
   }
 }
 
+/* ── ตรวจช่วงวันที่ซ้ำจากประวัติ ── */
+function checkDuplicatePeriod(dateFrom, dateTo) {
+  const warn = document.getElementById('dupWarning');
+  warn.style.display = 'none';
+  warn.innerHTML = '';
+  if (!_selectedCompany || !Object.keys(_histGroups).length) return;
+
+  const dupReports = Object.values(_histGroups).filter(g => {
+    const m = g.meta;
+    // กรองเฉพาะบริษัทเดียวกัน
+    if ((m.companyCode || '') !== _selectedCompany) return false;
+    // ตรวจช่วงวันที่ทับซ้อน
+    const from = m.dateFrom || '';
+    const to   = m.dateTo   || '';
+    if (!from || !to) return false;
+    // overlap: A.from <= B.to && A.to >= B.from
+    return dateFrom <= to && dateTo >= from;
+  });
+
+  if (dupReports.length === 0) return;
+
+  const list = dupReports.map(g =>
+    `<li>รายงาน <strong>${g.meta.reportNo || '—'}</strong> ช่วง ${fmtDate(g.meta.dateFrom)} – ${fmtDate(g.meta.dateTo)}</li>`
+  ).join('');
+
+  warn.innerHTML = `⚠️ <strong>พบรายงานที่ช่วงวันที่ทับซ้อน</strong> กับบริษัท ${_selectedCompany}:<ul style="margin:6px 0 0 18px;">${list}</ul><div style="margin-top:6px;font-size:12px;color:#7d5a00;">ตรวจสอบก่อนดำเนินการต่อ — อาจมีรายการซ้ำกัน</div>`;
+  warn.style.display = '';
+}
+
 function filterAndRender(dateFrom, dateTo) {
   let filtered = _fetchedData.filter(r => {
     if (dateFrom && r.returnDate && r.returnDate < dateFrom) return false;
@@ -907,10 +973,12 @@ function filterAndRender(dateFrom, dateTo) {
     const div = document.createElement('div');
     div.className = 'dpi';
     div.dataset.i = i;
+    const isUsed = _usedPettyNos.has(r.pettyNo);
+    if (isUsed) div.classList.add('already-used');
     div.innerHTML = `
       <input type="checkbox" class="dpi-check" onchange="updatePickCount()" />
       <div class="dpi-info">
-        <div class="dpi-main">${escHtml(r.customer || '—')}${r.plate ? '  •  ป้าย <strong>' + escHtml(r.plate) + '</strong>' : ''}</div>
+        <div class="dpi-main">${escHtml(r.customer || '—')}${r.plate ? '  •  ป้าย <strong>' + escHtml(r.plate) + '</strong>' : ''}${isUsed ? '<span class="used-badge">⚠️ เคยเบิกแล้ว</span>' : ''}</div>
         <div class="dpi-sub">
           ${r.refundType ? '💳 ' + escHtml(r.refundType) : ''}
           ${r.refundType && r.sales ? '  ·  ' : ''}
@@ -940,8 +1008,10 @@ function filterAndRender(dateFrom, dateTo) {
 function updatePickCount() {
   const checked = document.querySelectorAll('#depositList .dpi-check:checked').length;
   const total   = document.querySelectorAll('#depositList .dpi').length;
-  document.getElementById('pickCountLabel').textContent =
-    checked > 0 ? `เลือกแล้ว ${checked} / ${total} รายการ` : `${total} รายการ`;
+  const used    = document.querySelectorAll('#depositList .dpi.already-used').length;
+  let txt = checked > 0 ? `เลือกแล้ว ${checked} / ${total} รายการ` : `${total} รายการ`;
+  if (used > 0) txt += ` · ⚠️ เคยเบิกแล้ว ${used} รายการ`;
+  document.getElementById('pickCountLabel').textContent = txt;
 }
 function selectAll() {
   document.querySelectorAll('#depositList .dpi-check').forEach(cb => {
@@ -1209,6 +1279,14 @@ async function loadHistory() {
       groups[key].items.push(r);
     });
     _histGroups = groups;
+    // สร้าง Set ของ pettyNo ที่เคยบันทึกแล้ว (ทุกบริษัท)
+    _usedPettyNos = new Set();
+    Object.values(groups).forEach(g => {
+      g.items.forEach(it => {
+        const pn = String(it.pettyNo || '').trim();
+        if (pn) _usedPettyNos.add(pn);
+      });
+    });
     renderHistory();
   } catch(e) {
     body.innerHTML = `<div class="hist-empty"><div class="ei">⚠️</div><div>โหลดไม่สำเร็จ<br><small>${e.message}</small></div><br><button class="btn btn-outline" onclick="loadHistory()">ลองใหม่</button></div>`;
@@ -1513,12 +1591,14 @@ function openSheet() { window.open(SHEET_URL, '_blank'); }
    INIT
    ════════════════════════════════════════════════════════ */
 document.getElementById('reportDate').value = new Date().toISOString().split('T')[0];
-document.getElementById('filterDateFrom').addEventListener('change', () => {
-  filterAndRender(document.getElementById('filterDateFrom').value, document.getElementById('filterDateTo').value);
-});
-document.getElementById('filterDateTo').addEventListener('change', () => {
-  filterAndRender(document.getElementById('filterDateFrom').value, document.getElementById('filterDateTo').value);
-});
+function onFilterDateChange() {
+  const df = document.getElementById('filterDateFrom').value;
+  const dt = document.getElementById('filterDateTo').value;
+  if (_fetchedData.length > 0) filterAndRender(df, dt);
+}
+
+document.getElementById('filterDateFrom').addEventListener('change', onFilterDateChange);
+document.getElementById('filterDateTo').addEventListener('change', onFilterDateChange);
 </script>
 </body>
 </html>
