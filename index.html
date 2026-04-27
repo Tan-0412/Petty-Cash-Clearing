@@ -167,7 +167,7 @@ body {
 .tbl .cell-no { text-align: center; color: var(--text-muted); font-size: 12px; width: 36px; }
 .tbl .cell-date { width: 120px; }
 .tbl .cell-hasreceipt { width: 70px; text-align: center; }
-.tbl .cell-receipt { width: 110px; text-align: center; }
+.tbl .cell-receipt { width: 160px; text-align: center; }
 .tbl .cell-amount { width: 120px; }
 .tbl .cell-del { width: 36px; text-align: center; }
 /* checkbox in table */
@@ -299,8 +299,6 @@ body {
 .btn-outline:hover { border-color: var(--text-muted); background: var(--bg); }
 .btn-danger-outline { background: white; color: var(--danger); border: 1.5px solid #e0b3b3; }
 .btn-danger-outline:hover { background: #fdf0f0; }
-.btn-pdf { background: #c0392b; color: white; }
-.btn-pdf:hover { background: #a93226; transform: translateY(-1px); }
 
 /* ===================== TOAST ===================== */
 .toast {
@@ -479,38 +477,13 @@ body {
 .hist-empty { text-align: center; padding: 48px 16px; color: var(--text-muted); }
 
 /* PRINT VIEW */
+/* ===================== PRINT (ประวัติรายการเท่านั้น) ===================== */
 @media print {
-  .topbar, .bottom-bar, .install-banner, .add-row-btn,
-  .del-btn, .toast, .overlay, #installBanner,
-  .no-print, .tab-nav { display: none !important; }
-  body { background: white; }
-  .page { padding: 0; max-width: 100%; }
-  .card { box-shadow: none; border: 1px solid #ccc; margin-bottom: 10px; }
-  .card-body { padding: 12px 16px; }
-  .print-header {
-    display: block !important;
-    text-align: center;
-    margin-bottom: 16px;
-    padding-bottom: 12px;
-    border-bottom: 2px solid #333;
-  }
-  .print-meta-table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 13px; }
-  .print-meta-table td { padding: 3px 8px; text-align: left; }
-  .print-meta-table td:first-child { color: #555; width: 160px; }
-  .print-meta-table td:last-child { font-weight: 600; }
-  .print-meta-table tr { border-bottom: 1px solid #e5dfd3; }
-  /* Divider after last item row */
-  #itemsBody tr:last-child { border-bottom: 2px solid #3d5a3e !important; }
-  /* Sig card divider top */
-  .card:last-of-type { border-top: 2px solid #333 !important; }
-  .tbl tbody td input { border: none; background: transparent; }
-  .sum-row.highlight { background: #333 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-  .bottom-bar { display: none !important; }
-  #printView { display: block !important; }
-  #formPage, #historyPage { display: none !important; }
+  body * { visibility: hidden; }
+  #printView, #printView * { visibility: visible; }
+  #printView { position: fixed; top: 0; left: 0; width: 100%; }
   @page { margin: 15mm; size: A4; }
 }
-.print-header { display: none; }
 
 /* ===================== RESPONSIVE ===================== */
 @media (max-width: 600px) {
@@ -545,14 +518,12 @@ body {
     <div class="topbar-sub">กรอกข้อมูลเพื่อบันทึกลง Google Sheet</div>
   </div>
   <div class="topbar-actions">
-    <button class="icon-btn" onclick="printForm()" title="พิมพ์">🖨️</button>
-    <button class="icon-btn" onclick="exportPDF()" title="ส่งออก PDF">📄</button>
     <button class="icon-btn" onclick="openSheet()" title="เปิด Google Sheet">📊</button>
   </div>
 </div>
 
 <!-- Tab Nav -->
-<div class="tab-nav no-print">
+<div class="tab-nav">
   <button class="tab-btn active" id="tabForm" onclick="switchTab('form')">📝 กรอกฟอร์ม</button>
   <button class="tab-btn" id="tabHistory" onclick="switchTab('history')">📂 ประวัติรายการ</button>
 </div>
@@ -560,33 +531,9 @@ body {
 <div class="page">
 
   <div id="formPage">
-  <!-- Print Header (visible only when printing) -->
-  <div class="print-header" id="printHeader">
-    <h2 style="font-size:24px;font-weight:700;letter-spacing:0.02em;margin-bottom:4px;">ใบเคลียร์เงินยืมทดรอง</h2>
-    <div id="printCompanyName" style="font-size:14px;margin-top:2px;color:#555;"></div>
-    <!-- Info Box -->
-    <div style="border:1.5px solid #c8bfa8;border-radius:8px;overflow:hidden;margin:16px auto 0;max-width:700px;text-align:left;">
-      <div style="background:#3d5a3e;padding:8px 18px;">
-        <span style="color:white;font-weight:700;font-size:12px;letter-spacing:0.08em;">ข้อมูลทั่วไป</span>
-      </div>
-      <table class="print-meta-table" id="printMetaTable" style="margin:0;width:100%;">
-        <tr style="border-bottom:1px solid #e5dfd3;">
-          <td style="color:#666;width:180px;padding:9px 18px;font-weight:600;">ชื่อผู้เบิกเงินทดรอง</td>
-          <td id="pmName" style="font-weight:700;font-size:14px;padding:9px 18px;">—</td>
-          <td style="color:#666;width:160px;padding:9px 18px;font-weight:600;">วันที่ยื่นเบิก</td>
-          <td id="pmDate" style="font-weight:700;padding:9px 18px;">—</td>
-        </tr>
-        <tr>
-          <td style="color:#666;padding:9px 18px;font-weight:600;vertical-align:top;">วัตถุประสงค์</td>
-          <td id="pmPurpose" colspan="2" style="font-weight:600;padding:9px 18px;line-height:1.6;">—</td>
-          <td style="padding:9px 18px;"><span style="color:#666;font-weight:600;">ยอดเงินยืม: </span><span id="pmLoan" style="font-weight:700;color:#3d5a3e;font-size:14px;">—</span></td>
-        </tr>
-      </table>
-    </div>
-  </div>
 
   <!-- Section 1: ข้อมูลทั่วไป -->
-  <div class="card no-print">
+  <div class="card">
     <div class="card-head">📋 ข้อมูลทั่วไป</div>
     <div class="card-body">
       <div class="g2" style="margin-bottom:14px;">
@@ -612,7 +559,7 @@ body {
         </div>
         <div class="field">
           <label>ยอดเงินยืมทดรอง (บาท) <span class="req">*</span></label>
-          <input type="number" id="loanAmount" placeholder="0.00" step="0.01" min="0" oninput="calcAll()" />
+          <input type="text" id="loanAmount" placeholder="0.00" inputmode="decimal" oninput="fmtMoneyInput(this)" onblur="fmtMoneyBlur(this)" style="text-align:right;" />
         </div>
       </div>
     </div>
@@ -683,30 +630,6 @@ body {
     </div>
   </div>
 
-  <!-- Section 4: ลายเซ็น -->
-  <div class="card">
-    <div class="card-head">✍️ ลายเซ็นผู้เกี่ยวข้อง</div>
-    <div class="card-body">
-      <div class="sig-grid">
-        <div class="sig-item">
-          <div class="sig-line"></div>
-          <span>ผู้เบิกทดรอง</span>
-        </div>
-        <div class="sig-item">
-          <div class="sig-line"></div>
-          <span>บัญชี (ผู้ตรวจเอกสาร)</span>
-        </div>
-        <div class="sig-item">
-          <div class="sig-line"></div>
-          <span>ผู้บังคับบัญชา</span>
-        </div>
-        <div class="sig-item">
-          <div class="sig-line"></div>
-          <span>ผู้อนุมัติ</span>
-        </div>
-      </div>
-    </div>
-  </div>
 
   </div><!-- /formPage -->
 
@@ -736,8 +659,6 @@ body {
 <!-- Bottom Action Bar -->
 <div class="bottom-bar">
   <button class="btn btn-danger-outline" onclick="clearForm()">🗑 ล้างข้อมูล</button>
-  <button class="btn btn-outline" onclick="printForm()">🖨 พิมพ์</button>
-  <button class="btn btn-pdf" onclick="exportPDF()">📄 PDF</button>
   <button class="btn btn-primary" id="saveBtn" onclick="saveToSheet()">
     <span>💾 บันทึกลง Sheet</span>
   </button>
@@ -750,13 +671,16 @@ body {
 <div class="overlay" id="successOverlay">
   <div class="modal">
     <div class="modal-icon">✅</div>
-    <h3>บันทึกสำเร็จ!</h3>
-    <p>ข้อมูลถูกส่งไปยัง Google Sheet เรียบร้อยแล้ว<br>คลิกเพื่อเปิดดูข้อมูล</p>
+    <h3 id="successTitle">บันทึกสำเร็จ!</h3>
+    <p id="successMsg">ข้อมูลถูกส่งไปยัง Google Sheet เรียบร้อยแล้ว<br>คลิกเพื่อเปิดดูข้อมูล</p>
     <a class="modal-link" href="https://docs.google.com/spreadsheets/d/1FP0A53UPuawzb9GQM1D4OABhy0dXSvF3nignIMyEXtk/edit" target="_blank" rel="noopener">
       📊 เปิด Google Sheet
     </a>
     <br>
-    <button class="btn btn-outline" style="margin:0 auto;" onclick="closeModal()">ปิด</button>
+    <div style="display:flex;gap:10px;justify-content:center;margin-top:8px;">
+      <button class="btn btn-outline" onclick="closeModal()">ปิด</button>
+      <button class="btn btn-primary" onclick="closeModal();switchTab('history')" id="successViewHistBtn" style="display:none;">📂 ดูประวัติ</button>
+    </div>
   </div>
 </div>
 
@@ -809,7 +733,7 @@ function addRow(dateVal='', descVal='', receiptVal='', amtVal='', hasReceiptVal=
       <input type="checkbox" class="ihasreceipt receipt-check" ${checkedAttr} onchange="toggleReceipt(${id})" title="เอกสารการรับเงิน" />
     </td>
     <td class="cell-receipt"><input type="text" class="ireceipt" placeholder="เลขที่" value="${escHtml(receiptVal)}" style="text-align:center;" ${disabledAttr} /></td>
-    <td class="cell-amount"><input type="number" class="iamt" placeholder="0.00" step="0.01" min="0" value="${amtVal}" oninput="calcAll()" /></td>
+    <td class="cell-amount"><input type="text" class="iamt" placeholder="0.00" inputmode="decimal" value="${amtVal ? fmtForInput(amtVal) : ''}" oninput="fmtMoneyInput(this)" onblur="fmtMoneyBlur(this)" style="text-align:right;" /></td>
     <td class="cell-del"><button class="del-btn" onclick="delRow(${id})" title="ลบ">✕</button></td>
   `;
   tbody.appendChild(tr);
@@ -844,11 +768,43 @@ function reNumber() {
 }
 
 /* =============================================
+   MONEY INPUT FORMATTING
+   ============================================= */
+function parseMoney(str) {
+  // ลบ comma แล้วแปลงเป็น float
+  return parseFloat(String(str).replace(/,/g, '')) || 0;
+}
+
+function fmtForInput(val) {
+  // ฟอร์แมทตัวเลขเป็น 1,234.75 สำหรับแสดงใน input
+  const n = parseFloat(String(val).replace(/,/g, '')) || 0;
+  if (!n) return '';
+  return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function fmtMoneyInput(el) {
+  // ขณะพิมพ์ — อนุญาตแค่ตัวเลข, จุด, comma (ลบ comma เก่าแล้วใส่ใหม่หลังพิมพ์เสร็จ)
+  let raw = el.value.replace(/[^0-9.]/g, '');
+  // ถ้ามีจุดมากกว่า 1 จุด ตัดทิ้ง
+  const parts = raw.split('.');
+  if (parts.length > 2) raw = parts[0] + '.' + parts.slice(1).join('');
+  el.value = raw;
+  calcAll();
+}
+
+function fmtMoneyBlur(el) {
+  // เมื่อออกจาก field — ฟอร์แมทเป็น 1,234.75
+  const n = parseMoney(el.value);
+  el.value = n > 0 ? fmtForInput(n) : '';
+  calcAll();
+}
+
+/* =============================================
    CALCULATIONS
    ============================================= */
 function calcAll() {
-  const loan    = parseFloat(document.getElementById('loanAmount').value) || 0;
-  const amounts = [...document.querySelectorAll('.iamt')].map(i => parseFloat(i.value) || 0);
+  const loan    = parseMoney(document.getElementById('loanAmount').value);
+  const amounts = [...document.querySelectorAll('.iamt')].map(i => parseMoney(i.value));
   const total   = amounts.reduce((a, b) => a + b, 0);
   const diff    = loan - total;
 
@@ -877,7 +833,7 @@ async function saveToSheet() {
   const submitDate= document.getElementById('submitDate').value;
   const loanDate  = document.getElementById('loanDate').value;
   const purpose   = document.getElementById('purpose').value.trim();
-  const loanAmount= parseFloat(document.getElementById('loanAmount').value) || 0;
+  const loanAmount= parseMoney(document.getElementById('loanAmount').value);
 
   if (!company || !empName || !submitDate || !purpose || !loanAmount) {
     toast('กรุณากรอกข้อมูลให้ครบถ้วน', 'err'); return;
@@ -891,24 +847,18 @@ async function saveToSheet() {
     desc: tr.querySelector('.idesc').value,
     hasReceipt: tr.querySelector('.ihasreceipt').checked,
     receipt: tr.querySelector('.ireceipt').value,
-    amount: parseFloat(tr.querySelector('.iamt').value) || 0
+    amount: parseMoney(tr.querySelector('.iamt').value)
   }));
 
   const totalExpense = items.reduce((a, b) => a + b.amount, 0);
   const diff = loanAmount - totalExpense;
 
-  const payload = { company, empName, submitDate, loanDate, purpose, loanAmount, items, totalExpense, diff,
-    timestamp: new Date().toISOString() };
+  const payload = { action: 'write', company, empName, submitDate, loanDate, purpose, loanAmount, items, totalExpense, diff };
 
-  // ถ้าอยู่ในโหมดแก้ไข ให้ส่ง oldKey ไปด้วยเพื่อให้ Apps Script ลบ row เก่าก่อน
-  if (_editKey) {
-    const oldGroup = window._histGroups && window._histGroups[_editKey];
-    if (oldGroup) {
-      payload.editMode = true;
-      payload.oldTimestamp  = oldGroup.meta.timestamp;
-      payload.oldEmpName    = oldGroup.meta.empName;
-      payload.oldSubmitDate = oldGroup.meta.submitDate;
-    }
+  // ถ้าอยู่ในโหมดแก้ไข ส่ง groupId เดิมไปให้ Apps Script ใช้ (ไม่สร้าง groupId ใหม่)
+  if (_editKey && _editGroupId) {
+    payload.editMode = true;
+    payload.groupId  = _editGroupId;
   }
 
   const btn = document.getElementById('saveBtn');
@@ -916,24 +866,80 @@ async function saveToSheet() {
   btn.innerHTML = '<div class="spin"></div><span>' + (_editKey ? 'กำลังอัปเดต...' : 'กำลังบันทึก...') + '</span>';
 
   let saved = false;
+  let savedGroupId = _editGroupId || null; // เก็บ groupId ที่ใช้ save จริง
   if (SCRIPT_URL) {
     try {
-      const params = new URLSearchParams({ action: 'write', data: JSON.stringify(payload) });
-      await fetch(SCRIPT_URL + '?' + params.toString(), { method: 'GET', mode: 'no-cors' });
+      // Apps Script Web App ต้องการ redirect: 'follow' และ Content-Type: text/plain
+      // เพื่อให้ POST body ถูกส่งไปกับ doPost() ได้ถูกต้อง
+      const res = await fetch(SCRIPT_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify(payload),
+        redirect: 'follow',
+      });
+      // no-cors ทำให้ opaque response — ถ้าเปลี่ยนเป็น cors ได้ให้อ่าน json
+      if (res.ok) {
+        try {
+          const json = await res.json();
+          if (json.groupId) savedGroupId = json.groupId;
+        } catch(_) {}
+      }
       saved = true;
-    } catch(e) { console.warn('Script fetch error:', e); }
+    } catch(e) {
+      // ถ้า CORS block ให้ fallback no-cors (ส่งได้แต่อ่าน response ไม่ได้)
+      try {
+        await fetch(SCRIPT_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain' },
+          mode: 'no-cors',
+          body: JSON.stringify(payload)
+        });
+        saved = true;
+      } catch(e2) { console.warn('Script fetch error:', e2); }
+    }
   }
+
+  const wasEditing = !!_editKey; // เก็บก่อน reset
 
   btn.disabled = false;
   btn.innerHTML = '<span>💾 บันทึกลง Sheet</span>';
 
-  // ถ้าอยู่ในโหมดแก้ไข ให้ reset
+  // ถ้าอยู่ในโหมดแก้ไข ให้ reset และอัปเดต _histGroups ด้วยข้อมูลใหม่
   if (_editKey) {
-    _editKey = null;
+    const oldKey = _editKey;
+    // อัปเดต _histGroups ให้ตรงกับข้อมูลที่บันทึกไป
+    if (window._histGroups && window._histGroups[oldKey]) {
+      const g = window._histGroups[oldKey];
+      // อัปเดต meta
+      g.meta.company    = payload.company;
+      g.meta.empName    = payload.empName;
+      g.meta.submitDate = payload.submitDate;
+      g.meta.loanDate   = payload.loanDate;
+      g.meta.purpose    = payload.purpose;
+      g.meta.loanAmount = payload.loanAmount;
+      // อัปเดต items
+      g.items = payload.items.map((it, i) => ({
+        ...g.items[i] || {},
+        itemDate:       it.date,
+        itemDesc:       it.desc,
+        itemHasReceipt: it.hasReceipt,
+        itemReceipt:    it.receipt,
+        itemAmount:     it.amount,
+      }));
+    }
+    _editKey     = null;
+    _editGroupId = null;
     document.getElementById('editBanner').style.display = 'none';
   }
 
   if (saved) {
+    // ตั้งค่า modal ตามโหมด
+    const isEdit = wasEditing;
+    document.getElementById('successTitle').textContent = isEdit ? 'อัปเดตสำเร็จ!' : 'บันทึกสำเร็จ!';
+    document.getElementById('successMsg').innerHTML = isEdit
+      ? 'แก้ไขข้อมูลใน Google Sheet เรียบร้อยแล้ว<br>กด "ดูประวัติ" เพื่อดูรายการที่แก้ไข'
+      : 'ข้อมูลถูกส่งไปยัง Google Sheet เรียบร้อยแล้ว<br>คลิกเพื่อเปิดดูข้อมูล';
+    document.getElementById('successViewHistBtn').style.display = isEdit ? '' : 'none';
     document.getElementById('successOverlay').classList.add('open');
   } else {
     // Fallback: open sheet directly
@@ -946,36 +952,8 @@ function openSheet() { window.open(SHEET_URL, '_blank'); }
 function closeModal() { document.getElementById('successOverlay').classList.remove('open'); }
 
 /* =============================================
-   PRINT & PDF
+   OPEN SHEET
    ============================================= */
-function printForm() {
-  updatePrintHeader();
-  window.print();
-}
-
-function updatePrintHeader() {
-  const company  = document.getElementById('company').value   || 'บริษัท..............................จำกัด';
-  const empName  = document.getElementById('empName').value   || '—';
-  const submitDate = document.getElementById('submitDate').value || '—';
-  const purpose  = document.getElementById('purpose').value   || '—';
-  const loan     = parseFloat(document.getElementById('loanAmount').value) || 0;
-
-  const el = document.getElementById('printCompanyName');
-  if (el) el.textContent = company;
-  const set = (id, val) => { const e = document.getElementById(id); if (e) e.textContent = val; };
-  set('pmName',    empName);
-  set('pmDate',    fmtDate(submitDate));
-  set('pmPurpose', purpose);
-  set('pmLoan',    fmt(loan));
-}
-
-function exportPDF() {
-  updatePrintHeader();
-  toast('เตรียมส่งออก PDF... กด Save/Print as PDF ในหน้าพิมพ์', 'ok');
-  setTimeout(() => {
-    window.print();
-  }, 400);
-}
 
 /* =============================================
    CLEAR FORM
@@ -1086,11 +1064,20 @@ async function loadHistory() {
 }
 
 function renderHistory(rows) {
-  // Group rows by timestamp+name (same submission)
+  // Group rows by groupId (legacy data ที่ตั้ง groupId เองในชีทก็จะถูก group ถูกต้อง)
+  // fallback สำหรับ row ที่ไม่มี groupId เลย: ใช้ timestamp+ชื่อ+วันที่แทน
   const groups = {};
   rows.forEach(r => {
-    const key = r.timestamp + '||' + r.empName + '||' + r.submitDate;
-    if (!groups[key]) groups[key] = { meta: r, items: [] };
+    const key = (r.groupId && r.groupId.trim()) ? r.groupId.trim()
+                : (r.timestamp + '||' + r.empName + '||' + r.submitDate);
+    if (!groups[key]) {
+      groups[key] = { meta: r, items: [] };
+    } else {
+      // ใช้ meta จาก row ที่มีข้อมูลครบกว่า (loanAmount > 0 ดีกว่า 0)
+      if (!parseFloat(groups[key].meta.loanAmount) && parseFloat(r.loanAmount)) {
+        groups[key].meta = r;
+      }
+    }
     groups[key].items.push(r);
   });
 
@@ -1108,10 +1095,12 @@ function renderHistory(rows) {
   keys.forEach((key, gi) => {
     const g = groups[key];
     const m = g.meta;
-    const total = parseFloat(m.totalExpense) || 0;
-    const ret   = parseFloat(m.diffReturn)   || 0;
-    const extra = parseFloat(m.diffExtra)    || 0;
-    const loan  = parseFloat(m.loanAmount)   || 0;
+    const loan  = parseFloat(m.loanAmount) || 0;
+    // คำนวณ total จาก items จริงเสมอ (รองรับ legacy data ที่ไม่มีคอลัมน์รวม)
+    const total = g.items.reduce((sum, it) => sum + (parseFloat(it.itemAmount) || 0), 0);
+    const diff  = loan - total;
+    const ret   = diff >= 0 ? diff : 0;
+    const extra = diff <  0 ? -diff : 0;
 
     const div = document.createElement('div');
     div.className = 'hist-group';
@@ -1194,8 +1183,7 @@ function fmtTimestamp(str) {
     const months = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.',
                     'ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
     const buddhistYear = d.getFullYear() + 543;
-    const shortYear = String(buddhistYear).slice(-2);
-    const dateStr = `${d.getDate()} ${months[d.getMonth()]} ${shortYear}`;
+    const dateStr = `${d.getDate()} ${months[d.getMonth()]} ${buddhistYear}`;
     const hh = String(d.getHours()).padStart(2,'0');
     const mm = String(d.getMinutes()).padStart(2,'0');
     return `${dateStr} ${hh}:${mm} น.`;
@@ -1227,19 +1215,19 @@ function fmtDate(str) {
   }
   if (!d || isNaN(d)) return str;
   const buddhistYear = d.getFullYear() + 543;
-  // แสดงปี พ.ศ. แบบย่อ 2 หลัก เช่น 69
-  const shortYear = String(buddhistYear).slice(-2);
-  return `${d.getDate()} ${months[d.getMonth()]} ${shortYear}`;
+  return `${d.getDate()} ${months[d.getMonth()]} ${buddhistYear}`;
 }
 
 function printHistoryGroup(gi, key) {
   const g = window._histGroups[key];
   if (!g) return;
   const m = g.meta;
-  const total = parseFloat(m.totalExpense)||0;
   const loan  = parseFloat(m.loanAmount)||0;
-  const ret   = parseFloat(m.diffReturn)||0;
-  const extra = parseFloat(m.diffExtra)||0;
+  // คำนวณ total จาก items จริงเสมอ (รองรับ legacy data)
+  const total = g.items.reduce((sum, it) => sum + (parseFloat(it.itemAmount)||0), 0);
+  const diff  = loan - total;
+  const ret   = diff >= 0 ? diff : 0;
+  const extra = diff <  0 ? -diff : 0;
 
   const itemRows = g.items.map((it, i) => {
     const hasReceipt = it.itemHasReceipt !== undefined ? it.itemHasReceipt : true; // default true for old data
@@ -1273,19 +1261,19 @@ function printHistoryGroup(gi, key) {
         <div style="padding:0;background:#eaf4ea;">
           <table style="width:100%;border-collapse:collapse;font-size:13px;">
             <tr style="border-bottom:1px solid #c8e0c8;">
-              <td style="padding:10px 20px;color:#3d5a3e;width:200px;font-weight:600;">ชื่อผู้เบิกเงินทดรอง</td>
-              <td style="padding:10px 20px;font-weight:700;font-size:14px;">${m.empName}</td>
-              <td style="padding:10px 20px;color:#3d5a3e;width:180px;font-weight:600;">วันที่ยื่นเบิก</td>
+              <td style="padding:10px 20px;color:#3d5a3e;width:210px;font-weight:600;white-space:nowrap;">ชื่อผู้เบิกเงินทดรอง :</td>
+              <td style="padding:10px 20px;font-weight:700;font-size:14px;white-space:nowrap;">${m.empName}</td>
+              <td style="padding:10px 20px;color:#3d5a3e;width:160px;font-weight:600;white-space:nowrap;">วันที่ยื่นเบิก :</td>
               <td style="padding:10px 20px;font-weight:700;">${fmtDate(m.submitDate)}</td>
             </tr>
             <tr style="border-bottom:1px solid #c8e0c8;">
-              <td style="padding:10px 20px;color:#3d5a3e;font-weight:600;">ได้รับเงินทดรองวันที่</td>
+              <td style="padding:10px 20px;color:#3d5a3e;font-weight:600;white-space:nowrap;">ได้รับเงินทดรองวันที่ :</td>
               <td style="padding:10px 20px;font-weight:700;">${m.loanDate ? fmtDate(m.loanDate) : '—'}</td>
-              <td style="padding:10px 20px;color:#3d5a3e;font-weight:600;">ยอดเงินยืมทดรอง</td>
+              <td style="padding:10px 20px;color:#3d5a3e;font-weight:600;white-space:nowrap;">ยอดเงินยืมทดรอง :</td>
               <td style="padding:10px 20px;font-weight:700;font-size:14px;color:#3d5a3e;">${fmtN(loan)}</td>
             </tr>
             <tr>
-              <td style="padding:10px 20px;color:#3d5a3e;font-weight:600;vertical-align:top;">วัตถุประสงค์</td>
+              <td style="padding:10px 20px;color:#3d5a3e;font-weight:600;vertical-align:top;white-space:nowrap;">วัตถุประสงค์ :</td>
               <td colspan="3" style="padding:10px 20px;font-weight:600;line-height:1.6;">${m.purpose||''}</td>
             </tr>
           </table>
@@ -1358,21 +1346,25 @@ function printHistoryGroup(gi, key) {
 /* =============================================
    EDIT MODE
    ============================================= */
-let _editKey = null; // key ของ group ที่กำลังแก้ไข
+let _editKey    = null; // key ของ group ที่กำลังแก้ไข
+let _editGroupId = null; // groupId จริงใน Sheet (เก็บแยกป้องกัน _histGroups ถูกล้าง)
 
 function editGroup(key) {
   const g = window._histGroups && window._histGroups[key];
   if (!g) { toast('ไม่พบข้อมูล', 'err'); return; }
   const m = g.meta;
 
-  // เก็บ key ไว้สำหรับ save
-  _editKey = key;
+  // เก็บ key และ groupId จริงไว้สำหรับ save
+  _editKey     = key;
+  _editGroupId = (m.groupId && m.groupId.trim()) ? m.groupId.trim() : key;
 
   // โหลดข้อมูลลงฟอร์ม
   document.getElementById('company').value    = m.company    || '';
   document.getElementById('empName').value    = m.empName    || '';
   document.getElementById('purpose').value    = m.purpose    || '';
-  document.getElementById('loanAmount').value = m.loanAmount || '';
+  // ฟอร์แมท loanAmount เป็น 1,234.75
+  const loanVal = parseFloat(String(m.loanAmount).replace(/,/g,'')) || 0;
+  document.getElementById('loanAmount').value = loanVal > 0 ? fmtForInput(loanVal) : '';
 
   // แปลงวันที่กลับเป็น YYYY-MM-DD สำหรับ input[type=date]
   document.getElementById('submitDate').value = toInputDate(m.submitDate);
@@ -1401,7 +1393,8 @@ function editGroup(key) {
 }
 
 function cancelEdit() {
-  _editKey = null;
+  _editKey     = null;
+  _editGroupId = null;
   document.getElementById('editBanner').style.display = 'none';
   // reset save button label ให้ปกติ
   document.getElementById('saveBtn').innerHTML = '<span>💾 บันทึกลง Sheet</span>';
@@ -1452,13 +1445,12 @@ async function doDeleteGroup() {
   btn.textContent = 'กำลังลบ...';
 
   try {
-    const delPayload = {
-      timestamp: g.meta.timestamp,
-      empName:   g.meta.empName,
-      submitDate: g.meta.submitDate
-    };
-    const params = new URLSearchParams({ action: 'delete', data: JSON.stringify(delPayload) });
-    await fetch(SCRIPT_URL + '?' + params.toString(), { method: 'GET', mode: 'no-cors' });
+    await fetch(SCRIPT_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      mode: 'no-cors',
+      body: JSON.stringify({ action: 'delete', groupId: g.meta.groupId })
+    });
     closeDeleteModal();
     toast('ลบรายการเรียบร้อยแล้ว', 'ok');
     // รีโหลดประวัติ
