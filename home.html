@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="theme-color" content="#1a2d3a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="ระบบการเงิน">
+<title>ระบบบริหารการเงิน — Kings Yont</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+
+:root {
+  --loan-color: #3d5a3e;
+  --loan-light: #e8f0e8;
+  --loan-dark:  #2e4430;
+  --petty-color: #1a4a6b;
+  --petty-light: #e0eef8;
+  --petty-dark:  #0f3550;
+  --bg: #f2f4f7;
+  --text: #1a2330;
+  --text-muted: #6b7a8d;
+  --surface: #ffffff;
+  --shadow: 0 4px 24px rgba(26,35,48,0.10);
+  --shadow-lg: 0 12px 48px rgba(26,35,48,0.18);
+}
+
+body {
+  font-family: 'Sarabun', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  display: flex; flex-direction: column;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ── Header ── */
+.header {
+  background: var(--text);
+  color: white;
+  padding: 20px 24px 18px;
+  text-align: center;
+  position: relative;
+}
+.header-logo {
+  font-size: 11px; font-weight: 700; letter-spacing: 0.15em;
+  text-transform: uppercase; opacity: 0.55; margin-bottom: 6px;
+}
+.header-title {
+  font-size: 22px; font-weight: 800; letter-spacing: 0.01em;
+}
+.header-sub {
+  font-size: 13px; opacity: 0.6; margin-top: 4px;
+}
+
+/* ── Main ── */
+.main {
+  flex: 1;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 32px 20px 48px;
+  gap: 20px;
+}
+
+.section-label {
+  font-size: 11px; font-weight: 700; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--text-muted);
+  text-align: center; margin-bottom: 4px;
+}
+
+/* ── Module Cards ── */
+.module-grid {
+  display: flex; flex-direction: column; gap: 16px;
+  width: 100%; max-width: 480px;
+}
+
+.module-card {
+  display: flex; align-items: center; gap: 20px;
+  background: var(--surface);
+  border: 2px solid transparent;
+  border-radius: 16px;
+  padding: 24px 24px;
+  cursor: pointer;
+  text-decoration: none; color: inherit;
+  box-shadow: var(--shadow);
+  transition: all 0.22s cubic-bezier(0.34,1.2,0.64,1);
+  position: relative; overflow: hidden;
+}
+.module-card::before {
+  content: '';
+  position: absolute; top: 0; left: 0; bottom: 0; width: 5px;
+  border-radius: 16px 0 0 16px;
+  transition: width 0.22s;
+}
+.module-card:hover {
+  transform: translateY(-3px) scale(1.01);
+  box-shadow: var(--shadow-lg);
+}
+.module-card:active { transform: scale(0.98); }
+
+.module-card.loan::before { background: var(--loan-color); }
+.module-card.loan:hover   { border-color: var(--loan-color); }
+.module-card.petty::before { background: var(--petty-color); }
+.module-card.petty:hover   { border-color: var(--petty-color); }
+
+.module-icon {
+  font-size: 44px; flex-shrink: 0;
+  width: 72px; height: 72px;
+  border-radius: 18px;
+  display: flex; align-items: center; justify-content: center;
+}
+.module-card.loan  .module-icon { background: var(--loan-light); }
+.module-card.petty .module-icon { background: var(--petty-light); }
+
+.module-info { flex: 1; }
+.module-name {
+  font-size: 19px; font-weight: 800;
+  margin-bottom: 4px; letter-spacing: 0.01em;
+}
+.module-card.loan  .module-name { color: var(--loan-color); }
+.module-card.petty .module-name { color: var(--petty-color); }
+.module-desc {
+  font-size: 13px; color: var(--text-muted); line-height: 1.55;
+}
+.module-arrow {
+  font-size: 20px; opacity: 0.3; flex-shrink: 0;
+  transition: opacity 0.18s, transform 0.18s;
+}
+.module-card:hover .module-arrow { opacity: 0.7; transform: translateX(4px); }
+
+/* ── Tags ── */
+.module-tags {
+  display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px;
+}
+.tag {
+  font-size: 11px; font-weight: 600; padding: 3px 8px;
+  border-radius: 20px;
+}
+.module-card.loan  .tag { background: var(--loan-light);  color: var(--loan-color); }
+.module-card.petty .tag { background: var(--petty-light); color: var(--petty-color); }
+
+/* ── Divider ── */
+.divider {
+  display: flex; align-items: center; gap: 12px;
+  width: 100%; max-width: 480px;
+  color: var(--text-muted); font-size: 12px; font-weight: 600;
+  letter-spacing: 0.08em; text-transform: uppercase;
+}
+.divider::before, .divider::after {
+  content: ''; flex: 1; height: 1px; background: #dde1e8;
+}
+
+/* ── Footer ── */
+.footer {
+  text-align: center; padding: 16px;
+  font-size: 11px; color: var(--text-muted);
+}
+
+/* ── Responsive ── */
+@media (max-width: 480px) {
+  .module-icon { width: 56px; height: 56px; font-size: 32px; border-radius: 14px; }
+  .module-name { font-size: 17px; }
+  .module-card { padding: 18px 16px; gap: 14px; }
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-logo">Kings Yont Group</div>
+  <div class="header-title">ระบบบริหารการเงิน</div>
+  <div class="header-sub">เลือกโมดูลที่ต้องการใช้งาน</div>
+</div>
+
+<div class="main">
+
+  <div class="section-label">โมดูลการเงิน</div>
+
+  <div class="module-grid">
+
+    <!-- เงินทดรองจ่าย -->
+    <a class="module-card loan" href="index.html">
+      <div class="module-icon">💼</div>
+      <div class="module-info">
+        <div class="module-name">เงินทดรองจ่าย</div>
+        <div class="module-desc">บันทึกและเคลียร์เงินยืมทดรอง<br>พร้อมออกใบเคลียร์เงินยืม</div>
+        <div class="module-tags">
+          <span class="tag">บันทึกรายการ</span>
+          <span class="tag">ประวัติ</span>
+          <span class="tag">พิมพ์ใบเคลียร์</span>
+        </div>
+      </div>
+      <div class="module-arrow">›</div>
+    </a>
+
+    <div class="divider">หรือ</div>
+
+    <!-- เงินสดย่อย -->
+    <a class="module-card petty" href="petty_cash.html">
+      <div class="module-icon">💵</div>
+      <div class="module-info">
+        <div class="module-name">เงินสดย่อย</div>
+        <div class="module-desc">เบิกชดเชยเงินสดย่อย KK / KY<br>คืนมัดจำป้ายแดง และเพิ่มเพดาน</div>
+        <div class="module-tags">
+          <span class="tag">KK — กรุงเทพ</span>
+          <span class="tag">KY — คิงส์ยนต์</span>
+          <span class="tag">พิมพ์รายงาน</span>
+        </div>
+      </div>
+      <div class="module-arrow">›</div>
+    </a>
+
+  </div>
+
+</div>
+
+<div class="footer">ระบบบริหารการเงิน — Kings Yont Group</div>
+
+</body>
+</html>
