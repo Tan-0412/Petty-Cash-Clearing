@@ -477,14 +477,6 @@ body {
 .hist-empty { text-align: center; padding: 48px 16px; color: var(--text-muted); }
 
 /* PRINT VIEW */
-/* ===================== PRINT (ประวัติรายการเท่านั้น) ===================== */
-@media print {
-  body * { visibility: hidden; }
-  #printView, #printView * { visibility: visible; }
-  #printView { position: fixed; top: 0; left: 0; width: 100%; }
-  @page { margin: 15mm; size: A4; }
-}
-
 /* ===================== RESPONSIVE ===================== */
 @media (max-width: 600px) {
   .g2, .g3 { grid-template-columns: 1fr; }
@@ -652,9 +644,6 @@ body {
   </div>
 
 </div><!-- /page -->
-
-<!-- ===== PRINT VIEW (hidden, shown only when printing history) ===== -->
-<div id="printView" style="display:none;"></div>
 
 <!-- Bottom Action Bar -->
 <div class="bottom-bar">
@@ -1247,100 +1236,185 @@ function printHistoryGroup(gi, key) {
     </tr>`;
   }).join('');
 
-  const html = `
-    <div style="font-family:'Sarabun',sans-serif;color:#1a1917;max-width:800px;margin:0 auto;">
+  const fullHtml = `<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ใบเคลียร์เงินยืมทดรอง — ${m.empName}</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;}
+  /* ── CONTROL BAR ── */
+  body{font-family:'Sarabun',sans-serif;background:#6b7280;color:#1a1917;margin:0;}
+  .ctrl{background:#3d5a3e;padding:10px 20px;display:flex;gap:10px;align-items:center;
+    box-shadow:0 2px 8px rgba(0,0,0,0.3);position:relative;z-index:10;}
+  .ctrl-title{color:rgba(255,255,255,0.85);font-size:13px;font-weight:600;flex:1;}
+  .pbtn{padding:8px 20px;font-size:13px;font-family:'Sarabun',sans-serif;border:none;
+    border-radius:6px;cursor:pointer;font-weight:700;display:inline-flex;align-items:center;gap:6px;}
+  .pbtn-p{background:#e8a020;color:#1a3a00;}
+  .pbtn-p:hover{background:#f5c842;}
+  .pbtn-c{background:rgba(255,255,255,0.15);color:#fff;border:1px solid rgba(255,255,255,0.3);}
+  .pbtn-c:hover{background:rgba(255,255,255,0.25);}
+  /* ── A4 STAGE ── */
+  .stage{display:flex;justify-content:center;align-items:flex-start;
+    padding:24px 0;min-height:calc(100vh - 52px);background:#6b7280;}
+  /* กระดาษ A4: 210mm × 297mm @ 96dpi ≈ 794 × 1123px */
+  .page{width:794px;min-height:1123px;background:#fff;
+    box-shadow:0 4px 32px rgba(0,0,0,0.35);
+    padding:28mm 20mm 20mm;
+    position:relative;
+    transform-origin:top center;}
+  /* ── TITLE ── */
+  .doc-title{text-align:center;margin-bottom:18px;padding-bottom:12px;border-bottom:2px solid #e8a020;}
+  .doc-title h2{font-size:22px;font-weight:800;color:#1a2d10;letter-spacing:0.02em;margin-bottom:3px;}
+  .doc-title p{font-size:13px;color:#555;}
+  /* ── INFO BOX ── */
+  .info-box{border:1.5px solid #a8c8a8;border-radius:8px;overflow:hidden;margin-bottom:18px;
+    -webkit-print-color-adjust:exact;print-color-adjust:exact;}
+  .info-box table{width:100%;border-collapse:collapse;font-size:12px;}
+  .info-box tr{border-bottom:1px solid #c8e0c8;background:#eaf4ea;
+    -webkit-print-color-adjust:exact;print-color-adjust:exact;}
+  .info-box tr:last-child{border-bottom:none;}
+  .info-box td{padding:8px 14px;}
+  .info-lbl{color:#3d5a3e;font-weight:600;white-space:nowrap;width:185px;}
+  .info-val{font-weight:700;font-size:13px;}
+  .info-lbl2{color:#3d5a3e;font-weight:600;white-space:nowrap;width:150px;}
+  /* ── ITEMS TABLE ── */
+  .items-table{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:0;}
+  .items-table thead tr{background:#ddeef8;
+    -webkit-print-color-adjust:exact;print-color-adjust:exact;}
+  .items-table th{padding:8px 8px;border-top:1.5px solid #a0c8e0;
+    border-bottom:2px solid #a0c8e0;color:#1a4a6b;font-weight:700;}
+  .items-table td{padding:6px 8px;border-bottom:1px solid #e8eef8;}
+  .items-table tbody tr:nth-child(odd){background:#f8fbff;
+    -webkit-print-color-adjust:exact;print-color-adjust:exact;}
+  /* ── SUMMARY ── */
+  .sum-table{width:280px;margin-left:auto;border-collapse:collapse;font-size:12px;}
+  .sum-table tr{background:#ddeef8;
+    -webkit-print-color-adjust:exact;print-color-adjust:exact;}
+  .sum-table td{padding:7px 12px;}
+  .sum-divider{border-top:2px solid #3d5a3e;}
+  /* ── SIGNATURES ── */
+  .sig-divider{border-top:2px solid #333;margin-top:32px;margin-bottom:22px;}
+  .sig-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:24px;text-align:center;}
+  .sig-line{height:40px;border-bottom:1px solid #999;margin-bottom:5px;}
+  .sig-lbl{font-size:11px;color:#666;}
+  /* ── PRINT ── */
+  @media print{
+    body{background:#fff;}
+    .ctrl,.stage-pad{display:none!important;}
+    .stage{background:#fff!important;padding:0!important;min-height:auto!important;display:block!important;}
+    .page{transform:none!important;box-shadow:none!important;
+      width:100%!important;padding:0!important;min-height:auto!important;}
+    *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;}
+    @page{size:A4;margin:15mm;}
+  }
+</style>
+</head>
+<body>
 
-      <!-- Title -->
-      <div style="text-align:center;margin-bottom:20px;">
-        <h2 style="font-size:24px;font-weight:700;letter-spacing:0.02em;margin-bottom:4px;">ใบเคลียร์เงินยืมทดรอง</h2>
-        <div style="font-size:14px;color:#555;">${m.company}</div>
-      </div>
+<div class="ctrl">
+  <span class="ctrl-title">📄 ใบเคลียร์เงินยืมทดรอง — ${m.empName}</span>
+  <button class="pbtn pbtn-p" onclick="window.print()">🖨️ พิมพ์ / บันทึก PDF</button>
+  <button class="pbtn pbtn-c" onclick="window.close()">✕ ปิด</button>
+</div>
 
-      <!-- Info Box -->
-      <div style="border:1.5px solid #a8c8a8;border-radius:8px;overflow:hidden;margin-bottom:24px;">
-        <div style="padding:0;background:#eaf4ea;">
-          <table style="width:100%;border-collapse:collapse;font-size:13px;">
-            <tr style="border-bottom:1px solid #c8e0c8;">
-              <td style="padding:10px 20px;color:#3d5a3e;width:210px;font-weight:600;white-space:nowrap;">ชื่อผู้เบิกเงินทดรอง :</td>
-              <td style="padding:10px 20px;font-weight:700;font-size:14px;white-space:nowrap;">${m.empName}</td>
-              <td style="padding:10px 20px;color:#3d5a3e;width:160px;font-weight:600;white-space:nowrap;">วันที่ยื่นเบิก :</td>
-              <td style="padding:10px 20px;font-weight:700;">${fmtDate(m.submitDate)}</td>
-            </tr>
-            <tr style="border-bottom:1px solid #c8e0c8;">
-              <td style="padding:10px 20px;color:#3d5a3e;font-weight:600;white-space:nowrap;">ได้รับเงินทดรองวันที่ :</td>
-              <td style="padding:10px 20px;font-weight:700;">${m.loanDate ? fmtDate(m.loanDate) : '—'}</td>
-              <td style="padding:10px 20px;color:#3d5a3e;font-weight:600;white-space:nowrap;">ยอดเงินยืมทดรอง :</td>
-              <td style="padding:10px 20px;font-weight:700;font-size:14px;color:#3d5a3e;">${fmtN(loan)}</td>
-            </tr>
-            <tr>
-              <td style="padding:10px 20px;color:#3d5a3e;font-weight:600;vertical-align:top;white-space:nowrap;">วัตถุประสงค์ :</td>
-              <td colspan="3" style="padding:10px 20px;font-weight:600;line-height:1.6;">${m.purpose||''}</td>
-            </tr>
-          </table>
-        </div>
-      </div>
+<div class="stage">
+<div class="page" id="page">
 
-      <!-- Items Table -->
-      <table style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:0;">
-        <thead>
-          <tr style="background:#ddeef8;">
-            <th style="padding:10px 10px;border-bottom:2px solid #a0c8e0;border-top:1.5px solid #a0c8e0;text-align:center;width:40px;color:#1a4a6b;">No.</th>
-            <th style="padding:10px 10px;border-bottom:2px solid #a0c8e0;border-top:1.5px solid #a0c8e0;text-align:center;width:110px;color:#1a4a6b;">วันที่ทำรายการ</th>
-            <th style="padding:10px 10px;border-bottom:2px solid #a0c8e0;border-top:1.5px solid #a0c8e0;text-align:left;color:#1a4a6b;">รายการ</th>
-            <th style="padding:10px 10px;border-bottom:2px solid #a0c8e0;border-top:1.5px solid #a0c8e0;text-align:center;width:70px;color:#1a4a6b;">เอกสารการรับเงิน</th>
-            <th style="padding:10px 10px;border-bottom:2px solid #a0c8e0;border-top:1.5px solid #a0c8e0;text-align:center;width:110px;color:#1a4a6b;">เลขที่ใบเสร็จ</th>
-            <th style="padding:10px 10px;border-bottom:2px solid #a0c8e0;border-top:1.5px solid #a0c8e0;text-align:right;width:120px;color:#1a4a6b;">จำนวนเงิน</th>
-          </tr>
-        </thead>
-        <tbody>${itemRows}</tbody>
-      </table>
+  <div class="doc-title">
+    <h2>ใบเคลียร์เงินยืมทดรอง</h2>
+    <p>${m.company}</p>
+  </div>
 
-      <!-- Divider after last item -->
-      <div style="border-top:2px solid #3d5a3e;margin-bottom:0;"></div>
+  <div class="info-box">
+    <table>
+      <tr>
+        <td class="info-lbl">ชื่อผู้เบิกเงินทดรอง :</td>
+        <td class="info-val" style="white-space:nowrap;">${m.empName}</td>
+        <td class="info-lbl2">วันที่ยื่นเบิก :</td>
+        <td class="info-val">${fmtDate(m.submitDate)}</td>
+      </tr>
+      <tr>
+        <td class="info-lbl">ได้รับเงินทดรองวันที่ :</td>
+        <td class="info-val">${m.loanDate ? fmtDate(m.loanDate) : '—'}</td>
+        <td class="info-lbl2">ยอดเงินยืมทดรอง :</td>
+        <td class="info-val" style="color:#3d5a3e;">${fmtN(loan)}</td>
+      </tr>
+      <tr>
+        <td class="info-lbl" style="vertical-align:top;">วัตถุประสงค์ :</td>
+        <td colspan="3" style="font-weight:600;line-height:1.7;">${m.purpose||''}</td>
+      </tr>
+    </table>
+  </div>
 
-      <!-- Summary -->
-      <table style="width:280px;margin-left:auto;border-collapse:collapse;font-size:13px;margin-top:0;">
-        <tr style="background:#ddeef8;">
-          <td style="padding:8px 14px;color:#1a4a6b;font-weight:600;">ยอดเบิกเงินยืมทดรอง</td>
-          <td style="padding:8px 14px;text-align:right;font-weight:600;color:#1a4a6b;">${fmtN(loan)}</td>
-        </tr>
-        <tr style="background:#ddeef8;">
-          <td style="padding:8px 14px;color:#1a4a6b;font-weight:600;">ยอดเงินที่ใช้ไป</td>
-          <td style="padding:8px 14px;text-align:right;font-weight:600;color:#1a4a6b;">${fmtN(total)}</td>
-        </tr>
-        <tr style="background:#ddeef8;border-top:1.5px solid #a0c8e0;">
-          ${ret>0
-            ? `<td style="padding:9px 14px;font-weight:700;color:#3d5a3e;">คงเหลือ (คืน)</td><td style="padding:9px 14px;text-align:right;font-weight:700;font-size:15px;color:#3d5a3e;">${fmtN(ret)}</td>`
-            : extra>0
-              ? `<td style="padding:9px 14px;font-weight:700;color:#8b2a2a;">คงเหลือ (เกิน)</td><td style="padding:9px 14px;text-align:right;font-weight:700;font-size:15px;color:#8b2a2a;">${fmtN(extra)}</td>`
-              : `<td style="padding:9px 14px;font-weight:700;color:#1a4a6b;">ยอดพอดี</td><td style="padding:9px 14px;text-align:right;font-weight:700;color:#1a4a6b;">—</td>`
-          }
-        </tr>
-      </table>
+  <table class="items-table">
+    <thead>
+      <tr>
+        <th style="text-align:center;width:36px;">No.</th>
+        <th style="text-align:center;width:100px;">วันที่ทำรายการ</th>
+        <th style="text-align:left;">รายการ</th>
+        <th style="text-align:center;width:65px;">เอกสารการรับเงิน</th>
+        <th style="text-align:center;width:145px;">เลขที่ใบเสร็จ</th>
+        <th style="text-align:right;width:110px;">จำนวนเงิน</th>
+      </tr>
+    </thead>
+    <tbody>${itemRows}</tbody>
+  </table>
 
-      <!-- Divider before signatures -->
-      <div style="border-top:2px solid #333;margin-top:36px;margin-bottom:28px;"></div>
+  <div class="sum-divider"></div>
 
-      <!-- Signatures -->
-      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:28px;text-align:center;">
-        ${['ผู้เบิกทดรอง','บัญชี (ผู้ตรวจเอกสาร)','ผู้บังคับบัญชา','ผู้อนุมัติ'].map(s=>`
-          <div>
-            <div style="height:44px;border-bottom:1px solid #999;margin-bottom:6px;"></div>
-            <span style="font-size:12px;color:#666;">${s}</span>
-          </div>`).join('')}
-      </div>
+  <table class="sum-table">
+    <tr><td style="color:#1a4a6b;font-weight:600;">ยอดเบิกเงินยืมทดรอง</td><td style="text-align:right;font-weight:600;color:#1a4a6b;">${fmtN(loan)}</td></tr>
+    <tr><td style="color:#1a4a6b;font-weight:600;">ยอดเงินที่ใช้ไป</td><td style="text-align:right;font-weight:600;color:#1a4a6b;">${fmtN(total)}</td></tr>
+    <tr style="border-top:1.5px solid #a0c8e0;">
+      ${ret>0
+        ? `<td style="font-weight:700;color:#3d5a3e;">คงเหลือ (คืน)</td><td style="text-align:right;font-weight:800;font-size:14px;color:#3d5a3e;">${fmtN(ret)}</td>`
+        : extra>0
+          ? `<td style="font-weight:700;color:#8b2a2a;">คงเหลือ (เกิน)</td><td style="text-align:right;font-weight:800;font-size:14px;color:#8b2a2a;">${fmtN(extra)}</td>`
+          : `<td style="font-weight:700;color:#1a4a6b;">ยอดพอดี</td><td style="text-align:right;font-weight:700;color:#1a4a6b;">—</td>`}
+    </tr>
+  </table>
 
-    </div>
-  `;
+  <div class="sig-divider"></div>
+  <div class="sig-grid">
+    ${['ผู้เบิกเงินทดรอง','บัญชี (ผู้ตรวจเอกสาร)','ผู้บังคับบัญชา','ผู้อนุมัติ'].map(s=>`
+      <div><div class="sig-line"></div><div class="sig-lbl">${s}</div></div>`).join('')}
+  </div>
 
-  document.getElementById('printView').innerHTML = html;
+</div><!-- /page -->
+</div><!-- /stage -->
 
-  // hide everything else, print, restore
-  document.getElementById('historyPage').style.display = 'none';
-  document.getElementById('printView').style.display = 'block';
-  window.print();
-  document.getElementById('printView').style.display = 'none';
-  document.getElementById('historyPage').style.display = '';
+<script>
+// Scale กระดาษให้พอดีหน้าจอโดยไม่ต้อง scroll แนวนอน
+(function scaleToFit(){
+  const ctrl  = document.querySelector('.ctrl');
+  const page  = document.getElementById('page');
+  const stage = document.querySelector('.stage');
+  function fit(){
+    const availW  = window.innerWidth;
+    const availH  = window.innerHeight - ctrl.offsetHeight;
+    const pageW   = 794; // px A4 width
+    const pageH   = page.scrollHeight || 1123;
+    const scaleW  = (availW - 48) / pageW;   // 48px margin
+    const scaleH  = availH / (pageH + 48);
+    const scale   = Math.min(scaleW, scaleH, 1); // ไม่ขยายเกิน 100%
+    page.style.transform = 'scale(' + scale + ')';
+    // ปรับ stage height ให้รองรับกระดาษที่ scale แล้ว
+    stage.style.minHeight = (pageH * scale + 48) + 'px';
+  }
+  window.addEventListener('resize', fit);
+  // รอ font โหลดก่อน
+  if(document.fonts){ document.fonts.ready.then(fit); } else { setTimeout(fit,300); }
+  fit();
+})();
+<\/script>
+</body></html>`;
+
+  const w = window.open('', '_blank');
+  w.document.write(fullHtml);
+  w.document.close();
 }
 
 /* =============================================
